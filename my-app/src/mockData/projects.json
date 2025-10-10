@@ -1,0 +1,22 @@
+{
+    "projects": [
+        {
+            "id": 1,
+            "name": "Website Redesign",
+            "description": "Ảnh cho dự án thiết kế lại website",
+            "status": "active",
+            "photoCount": 0,
+            "createdAt": "2024-01-05T00:00:00Z",
+            "createdBy": 1
+        },
+        {
+            "id": 2,
+            "name": "Marketing Campaign Q1",
+            "description": "Ảnh cho chiến dịch marketing quý 1",
+            "status": "active",
+            "photoCount": 0,
+            "createdAt": "2024-01-10T00:00:00Z",
+            "createdBy": 1
+        }
+    ]
+}

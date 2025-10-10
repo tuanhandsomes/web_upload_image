@@ -1,0 +1,184 @@
+{
+    "accounts": [
+        {
+            "id": 1,
+            "username": "admin",
+            "email": "admin@example.com",
+            "password": "admin123",
+            "role": "admin",
+            "status": "active",
+            "createdAt": "2024-01-01T00:00:00Z"
+        },
+        {
+            "id": 2,
+            "username": "user1",
+            "email": "user1@example.com",
+            "password": "user123",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-01-02T00:00:00Z"
+        },
+        {
+            "id": 3,
+            "username": "user2",
+            "email": "user2@example.com",
+            "password": "user456",
+            "role": "user",
+            "status": "inactive",
+            "createdAt": "2024-01-05T00:00:00Z"
+        },
+        {
+            "id": 4,
+            "username": "user3",
+            "email": "user3@example.com",
+            "password": "user789",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-01-10T00:00:00Z"
+        },
+        {
+            "id": 5,
+            "username": "user4",
+            "email": "user4@example.com",
+            "password": "user000",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-01-15T00:00:00Z"
+        },
+        {
+            "id": 6,
+            "username": "user5",
+            "email": "user5@example.com",
+            "password": "user123",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-01-02T00:00:00Z"
+        },
+        {
+            "id": 7,
+            "username": "user6",
+            "email": "user6@example.com",
+            "password": "user456",
+            "role": "user",
+            "status": "inactive",
+            "createdAt": "2024-01-05T00:00:00Z"
+        },
+        {
+            "id": 8,
+            "username": "user7",
+            "email": "user7@example.com",
+            "password": "user789",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-01-10T00:00:00Z"
+        },
+        {
+            "id": 9,
+            "username": "user8",
+            "email": "user8@example.com",
+            "password": "user000",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-01-15T00:00:00Z"
+        },
+        {
+            "id": 10,
+            "username": "user9",
+            "email": "user9@example.com",
+            "password": "user000",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-01-15T00:00:00Z"
+        },
+        {
+            "id": 11,
+            "username": "user10",
+            "email": "user10@example.com",
+            "password": "user111",
+            "role": "user",
+            "status": "inactive",
+            "createdAt": "2024-02-01T00:00:00Z"
+        },
+        {
+            "id": 12,
+            "username": "user11",
+            "email": "user11@example.com",
+            "password": "user222",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-02-05T00:00:00Z"
+        },
+        {
+            "id": 13,
+            "username": "user12",
+            "email": "user12@example.com",
+            "password": "user333",
+            "role": "user",
+            "status": "inactive",
+            "createdAt": "2024-02-10T00:00:00Z"
+        },
+        {
+            "id": 14,
+            "username": "user13",
+            "email": "user13@example.com",
+            "password": "user444",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-02-15T00:00:00Z"
+        },
+        {
+            "id": 15,
+            "username": "user14",
+            "email": "user14@example.com",
+            "password": "user555",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-03-01T00:00:00Z"
+        },
+        {
+            "id": 16,
+            "username": "user15",
+            "email": "user15@example.com",
+            "password": "user666",
+            "role": "user",
+            "status": "inactive",
+            "createdAt": "2024-03-10T00:00:00Z"
+        },
+        {
+            "id": 17,
+            "username": "user16",
+            "email": "user16@example.com",
+            "password": "user777",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-03-15T00:00:00Z"
+        },
+        {
+            "id": 18,
+            "username": "user17",
+            "email": "user17@example.com",
+            "password": "user888",
+            "role": "user",
+            "status": "inactive",
+            "createdAt": "2024-03-20T00:00:00Z"
+        },
+        {
+            "id": 19,
+            "username": "user18",
+            "email": "user18@example.com",
+            "password": "user999",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-03-25T00:00:00Z"
+        },
+        {
+            "id": 20,
+            "username": "user19",
+            "email": "user19@example.com",
+            "password": "user000",
+            "role": "user",
+            "status": "active",
+            "createdAt": "2024-04-01T00:00:00Z"
+        }
+    ]
+}

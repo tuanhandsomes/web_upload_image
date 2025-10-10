@@ -1,0 +1,19 @@
+{
+    "photos": [
+        {
+            "id": 1,
+            "projectId": 1,
+            "userId": 2,
+            "title": "Homepage Banner",
+            "description": "Banner chính trang chủ",
+            "fileName": "banner-homepage.jpg",
+            "fileUrl": "data:image/jpeg;base64,/9j/4AAQ...",
+            "fileSize": 2048576,
+            "tags": [
+                "banner",
+                "homepage"
+            ],
+            "uploadedAt": "2024-01-15T10:30:00Z"
+        }
+    ]
+}
