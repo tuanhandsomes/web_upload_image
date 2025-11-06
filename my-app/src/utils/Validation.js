@@ -48,7 +48,7 @@ export function validateAccountForm({ username, email, password, confirmPassword
     // Role
     if (!role?.trim()) {
         errors.role = "Vui lòng chọn role";
-    } else if (!["Admin", "User"].includes(role)) {
+    } else if (!["admin", "user"].includes(role)) {
         errors.role = "Role không hợp lệ";
     }
 

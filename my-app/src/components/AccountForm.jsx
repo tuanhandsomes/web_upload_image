@@ -1,5 +1,6 @@
+// src/components/ui/AccountForm.jsx
 import { useState } from "react";
-import { validateAccountForm, checkDuplicate } from "../utils/Validation";
+import { validateAccountForm } from "../utils/Validation";
 
 function AccountForm({ onClose, onSave }) {
     const [form, setForm] = useState({
@@ -8,71 +9,56 @@ function AccountForm({ onClose, onSave }) {
         password: "",
         confirmPassword: "",
         role: "",
-        isActive: true,
+        status: "active",
     });
     const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [serviceError, setServiceError] = useState(null);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+
+        if (name === "status") {
+            setForm({ ...form, status: checked ? "active" : "inactive" });
+        } else {
+            setForm({ ...form, [name]: value });
+        }
+
         setErrors({ ...errors, [name]: "" }); // Xóa lỗi khi user nhập vào input
+        setServiceError(null);
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        setServiceError(null);
 
-        // Validate form
         const validationErrors = validateAccountForm(form);
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
             return;
         }
 
-        // Lấy danh sách account hiện có
-        const storedAccounts = JSON.parse(localStorage.getItem("accounts")) || [];
+        setLoading(true);
 
-        // Check trùng
-        const duplicateError = checkDuplicate(storedAccounts, form);
-        if (duplicateError) {
-            alert(duplicateError);
-            return;
-        }
-
-        // Tạo ID mới
-        const newId =
-            storedAccounts.length > 0
-                ? Math.max(...storedAccounts.map((acc) => acc.id)) + 1
-                : 1;
-
-        // Tạo account mới
-        const newAccount = {
-            id: newId,
-            username: form.username.trim(),
-            email: form.email.trim(),
+        const accountData = {
+            username: form.username,
+            email: form.email,
             password: form.password,
             role: form.role,
-            status: form.isActive ? "active" : "inactive",
-            createdAt: new Date().toISOString(),
+            status: form.status,
         };
 
-        // Lưu vào LocalStorage
-        const updatedAccounts = [...storedAccounts, newAccount];
-        localStorage.setItem("accounts", JSON.stringify(updatedAccounts));
-
-        // Gọi callback
-        onSave(newAccount);
-
-        // Reset form
-        setForm({
-            username: "",
-            email: "",
-            password: "",
-            confirmPassword: "",
-            role: "",
-            isActive: true,
-        });
-        setErrors({});
-        onClose();
+        onSave(accountData)
+            .then(() => {
+                // Thành công, component cha (AccountManagement) sẽ đóng form
+            })
+            .catch((err) => {
+                // Hiển thị lỗi từ service (ví dụ: "Username đã tồn tại")
+                setServiceError(err.message);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     };
 
     return (
@@ -82,6 +68,13 @@ function AccountForm({ onClose, onSave }) {
                 <p className="text-gray-500 mb-4 text-sm">
                     Add a new user account to the system
                 </p>
+
+                {/* HIỂN THỊ LỖI TỪ SERVICE */}
+                {serviceError && (
+                    <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">
+                        {serviceError}
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -97,6 +90,7 @@ function AccountForm({ onClose, onSave }) {
                                 className={`border rounded-md w-full p-2 focus:ring focus:ring-blue-200 ${errors.username ? "border-red-500" : "border-gray-200"
                                     }`}
                                 placeholder="Enter username"
+                                disabled={loading}
                             />
                             {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
                         </div>
@@ -114,6 +108,7 @@ function AccountForm({ onClose, onSave }) {
                                 className={`border rounded-md w-full p-2 focus:ring focus:ring-blue-200 ${errors.email ? "border-red-500" : "border-gray-200"
                                     }`}
                                 placeholder="Enter email"
+                                disabled={loading}
                             />
                             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                         </div>
@@ -131,6 +126,7 @@ function AccountForm({ onClose, onSave }) {
                                 className={`border rounded-md w-full p-2 focus:ring focus:ring-blue-200 ${errors.password ? "border-red-500" : "border-gray-200"
                                     }`}
                                 placeholder="Enter password"
+                                disabled={loading}
                             />
                             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                         </div>
@@ -148,6 +144,7 @@ function AccountForm({ onClose, onSave }) {
                                 className={`border rounded-md w-full p-2 focus:ring focus:ring-blue-200 ${errors.confirmPassword ? "border-red-500" : "border-gray-200"
                                     }`}
                                 placeholder="Confirm password"
+                                disabled={loading}
                             />
                             {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
                         </div>
@@ -163,10 +160,11 @@ function AccountForm({ onClose, onSave }) {
                                 onChange={handleChange}
                                 className={`border rounded-md w-full p-2 focus:ring focus:ring-blue-200 cursor-pointer ${errors.role ? "border-red-500" : "border-gray-200"
                                     }`}
+                                disabled={loading}
                             >
                                 <option value="">Select role</option>
-                                <option value="Admin">Admin</option>
-                                <option value="User">User</option>
+                                <option value="admin">Admin</option>
+                                <option value="user">User</option>
                             </select>
                             {errors.role && <p className="text-red-500 text-sm mt-1">{errors.role}</p>}
                         </div>
@@ -180,11 +178,12 @@ function AccountForm({ onClose, onSave }) {
                                 <span className="text-gray-700 font-medium">Active Account</span>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
-                                        name="isActive"
+                                        name="status"
                                         type="checkbox"
-                                        checked={form.isActive}
+                                        checked={form.status === "active"}
                                         onChange={handleChange}
                                         className="sr-only peer"
+                                        disabled={loading}
                                     />
                                     <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none 
                                         rounded-full peer
@@ -205,15 +204,17 @@ function AccountForm({ onClose, onSave }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
+                            disabled={loading}
+                            className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-100 cursor-pointer transition-colors duration-200 disabled:opacity-50"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            className="px-5 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 cursor-pointer transition-colors duration-200 shadow-md active:scale-95"
+                            disabled={loading}
+                            className="px-5 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 cursor-pointer transition-colors duration-200 shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Add Account
+                            {loading ? "Adding..." : "Add Account"}
                         </button>
                     </div>
                 </form>

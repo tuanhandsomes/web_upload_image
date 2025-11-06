@@ -12,62 +12,117 @@ const initAccounts = () => {
     }
     return stored;
 };
-
-let accounts = initAccounts();
+initAccounts();
 
 export const accountService = {
     // Lấy tất cả tài khoản
     getAll: () => {
-        const stored = getData(STORAGE_KEY);
-        accounts = stored.length ? stored : accounts;
-        return Promise.resolve(accounts);
+        const stored = getData(STORAGE_KEY, []);
+        return Promise.resolve(stored);
     },
 
     // Lấy tài khoản theo ID
     getById: (id) => {
-        const stored = getData(STORAGE_KEY);
-        const account = stored.find((a) => a.id === id);
+        const accounts = getData(STORAGE_KEY, []);
+        const account = accounts.find((a) => a.id === id);
         return Promise.resolve(account);
     },
 
-    // Tạo tài khoản mới
     create: (accountData) => {
-        const stored = getData(STORAGE_KEY, []);
-        const newId =
-            stored.length > 0 ? Math.max(...stored.map((a) => a.id)) + 1 : 1;
+        const accounts = getData(STORAGE_KEY, []);
 
+        // 1. Kiểm tra trùng lặp
+        const usernameExists = accounts.some(
+            (acc) => acc.username.toLowerCase() === accountData.username.toLowerCase()
+        );
+        if (usernameExists) {
+            return Promise.reject(new Error("Username đã tồn tại"));
+        }
+
+        const emailExists = accounts.some(
+            (acc) => acc.email.toLowerCase() === accountData.email.toLowerCase()
+        );
+        if (emailExists) {
+            return Promise.reject(new Error("Email đã tồn tại"));
+        }
+
+        // 2. Tạo ID mới
+        const newId = accounts.length > 0 ? Math.max(...accounts.map((a) => a.id)) + 1 : 1;
+
+        // 3. Tạo object account mới (chuẩn hóa dữ liệu)
         const newAccount = {
             id: newId,
-            ...accountData,
+            username: accountData.username.trim(),
+            email: accountData.email.trim(),
+            password: accountData.password,
+            role: accountData.role,
+            status: accountData.status,
             createdAt: new Date().toISOString(),
         };
 
-        const updatedList = [...stored, newAccount];
+        // 4. Lưu vào localStorage
+        const updatedList = [...accounts, newAccount];
         saveData(STORAGE_KEY, updatedList);
-        accounts = updatedList;
 
         return Promise.resolve(newAccount);
     },
 
-    // Cập nhật tài khoản
     update: (id, accountData) => {
-        const stored = getData(STORAGE_KEY, []);
-        const index = stored.findIndex((a) => a.id === id);
-        if (index !== -1) {
-            stored[index] = { ...stored[index], ...accountData };
-            saveData(STORAGE_KEY, stored);
-            accounts = stored;
-            return Promise.resolve(stored[index]);
+        const accounts = getData(STORAGE_KEY, []);
+        const index = accounts.findIndex((a) => a.id === id);
+
+        if (index === -1) {
+            return Promise.reject(new Error("Account not found"));
         }
-        return Promise.reject("Account not found");
+
+        // 1. Kiểm tra trùng lặp (bỏ qua chính mình)
+        const usernameExists = accounts.some(
+            (acc) =>
+                acc.username.toLowerCase() === accountData.username.toLowerCase() &&
+                acc.id !== id
+        );
+        if (usernameExists) {
+            return Promise.reject(new Error("Username đã tồn tại"));
+        }
+
+        const emailExists = accounts.some(
+            (acc) =>
+                acc.email.toLowerCase() === accountData.email.toLowerCase() &&
+                acc.id !== id
+        );
+        if (emailExists) {
+            return Promise.reject(new Error("Email đã tồn tại"));
+        }
+
+        // 2. Cập nhật dữ liệu
+        const updatedAccount = {
+            ...accounts[index],
+            username: accountData.username.trim(),
+            email: accountData.email.trim(),
+            password: accountData.password,
+            role: accountData.role,
+            status: accountData.status,
+        };
+
+        accounts[index] = updatedAccount;
+        saveData(STORAGE_KEY, accounts);
+
+        return Promise.resolve(updatedAccount);
     },
 
-    // Xóa tài khoản
-    delete: (id) => {
-        const stored = getData(STORAGE_KEY, []);
-        const updatedList = stored.filter((a) => a.id !== id);
+    delete: (idToDelete, currentUserId) => {
+        if (idToDelete === currentUserId) {
+            return Promise.reject(new Error("Bạn không thể xoá tài khoản đang đăng nhập!"));
+        }
+
+        const accounts = getData(STORAGE_KEY, []);
+        const updatedList = accounts.filter((a) => a.id !== idToDelete);
+
+        if (accounts.length === updatedList.length) {
+            return Promise.reject(new Error("Account not found"));
+        }
+
         saveData(STORAGE_KEY, updatedList);
-        accounts = updatedList;
         return Promise.resolve();
     },
 };
