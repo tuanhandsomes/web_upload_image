@@ -1,5 +1,6 @@
 // src/pages/admin/AccountManagement.jsx
 import { useState, useMemo, useEffect } from "react";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faPenToSquare,
@@ -7,19 +8,20 @@ import {
     faPlus,
     faLessThan,
     faGreaterThan,
+    faSearch
 } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
 import { accountService } from "../../services/accountService";
 import { useAuth } from "../../contexts/AuthContext";
 
-import AccountForm from "../../components/AccountForm";
-import EditAccountForm from "../../components/EditAccountForm";
+import AccountForm from "../../components/common/AccountForm";
+import EditAccountForm from "../../components/common/EditAccountForm";
 
 function AccountManagement() {
     const { user: currentUser } = useAuth(); // Lấy user đang đăng nhập
-    const [search, setSearch] = useState("");
-    const [roleFilter, setRoleFilter] = useState("All");
-    const [statusFilter, setStatusFilter] = useState("All");
+    const [search, setSearch] = useLocalStorage("account_search", "");
+    const [roleFilter, setRoleFilter] = useLocalStorage("account_role_filter", "All");
+    const [statusFilter, setStatusFilter] = useLocalStorage("account_status_filter", "All");
     const [showForm, setShowForm] = useState(false);
     const [userList, setUserList] = useState([]); // Đây là danh sách gốc từ service
     const [currentPage, setCurrentPage] = useState(1);
@@ -143,14 +145,18 @@ function AccountManagement() {
 
             {/* Search & Filters (Sửa value của Filter) */}
             <div className="bg-white shadow-sm rounded-xl p-4 mb-6 flex flex-wrap gap-3 items-center">
-                <input
-                    type="text"
-                    placeholder="Search accounts..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-4 py-2 w-full sm:w-1/3 
-                     focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                />
+                <div className="relative flex-grow sm:flex-grow-0 sm:w-1/3">
+                    <input
+                        type="text"
+                        placeholder="Search accounts..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="border border-gray-300 rounded-lg pl-10 pr-4 py-2 w-full
+                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    />
+                    <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                </div>
+
                 <select
                     value={roleFilter}
                     onChange={(e) => setRoleFilter(e.target.value)}
@@ -333,20 +339,24 @@ function AccountManagement() {
                 )}
             </div>
 
-            {showForm && (
-                <AccountForm
-                    onClose={() => setShowForm(false)}
-                    onSave={handleAddAccount}
-                />
-            )}
-            {editingAccount && (
-                <EditAccountForm
-                    account={editingAccount}
-                    onClose={() => setEditingAccount(null)}
-                    onSave={handleUpdateAccount}
-                />
-            )}
-        </div>
+            {
+                showForm && (
+                    <AccountForm
+                        onClose={() => setShowForm(false)}
+                        onSave={handleAddAccount}
+                    />
+                )
+            }
+            {
+                editingAccount && (
+                    <EditAccountForm
+                        account={editingAccount}
+                        onClose={() => setEditingAccount(null)}
+                        onSave={handleUpdateAccount}
+                    />
+                )
+            }
+        </div >
     );
 }
 

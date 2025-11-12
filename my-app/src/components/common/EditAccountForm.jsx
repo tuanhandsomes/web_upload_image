@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { validateAccountForm } from "../utils/Validation";
+import { validateAccountForm } from "../../utils/Validation";
 
 function EditAccountForm({ account, onClose, onSave }) {
     const [form, setForm] = useState({

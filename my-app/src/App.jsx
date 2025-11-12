@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ProjectProvider } from "./contexts/ProjectContext";
 import { PrivateRoute } from "./routes/PrivateRoute";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -45,7 +46,9 @@ function App() {
           path="/"
           element={
             <PrivateRoute>
-              <AdminLayout />
+              <ProjectProvider>
+                <AdminLayout />
+              </ProjectProvider>
             </PrivateRoute>
           }
         >

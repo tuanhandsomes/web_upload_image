@@ -1,6 +1,6 @@
 // src/components/ui/AccountForm.jsx
 import { useState } from "react";
-import { validateAccountForm } from "../utils/Validation";
+import { validateAccountForm } from "../../utils/Validation";
 
 function AccountForm({ onClose, onSave }) {
     const [form, setForm] = useState({

@@ -2,31 +2,32 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUsers, faImages, faFolderOpen, faChartPie, faCloudArrowUp, faHouse, faDiagramProject, faCameraRetro } from "@fortawesome/free-solid-svg-icons";
+
 function Sidebar() {
     const { user } = useAuth();
     const location = useLocation();
 
+    // Cập nhật màu cho link active/inactive
     const linkClass = (path) =>
         `flex items-center gap-3 flex-nowrap whitespace-nowrap px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer
         ${location.pathname === path
-            ? "bg-[#3B82F6] text-white shadow-sm"
-            : "text-gray-300 hover:bg-blue-500/20 hover:text-white"
+            ? "bg-blue-600 text-white shadow-sm" // Active: Nền xanh, chữ trắng
+            : "text-indigo-200 hover:bg-indigo-700 hover:text-white" // Inactive: Chữ xanh nhạt, hover nền xanh đậm hơn
         }`;
 
     return (
-        <aside className="bg-gray-800 text-gray-100 w-64 min-h-screen p-5 shadow-lg flex flex-col ">
-            {/* Logo / Title */}
+        <aside className="bg-[#223771] text-indigo-100 w-64 min-h-full p-5 rounded-2xl flex flex-col">
+
             <div className="mb-6">
-                <h2 className="text-2xl font-bold tracking-wide"><FontAwesomeIcon icon={faCameraRetro} />
+                <h2 className="text-2xl font-bold tracking-wide text-white"><FontAwesomeIcon icon={faCameraRetro} />
                     <Link
                         to={user?.role === "admin" ? "/admin/dashboard" : "/"}
                     >
                         Image Upload
                     </Link></h2>
-                <div className="border-t border-indigo-200/40 mt-2"></div>
+                <div className="border-t border-indigo-300/40 mt-2"></div>
             </div>
 
-            {/* Navigation */}
             <nav className="flex flex-col gap-2">
                 {user?.role === "admin" ? (
                     <>

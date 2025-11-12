@@ -64,4 +64,23 @@ export function checkDuplicate(storedAccounts, { username, email }) {
         return "Email đã tồn tại";
     }
     return null; // không lỗi
+
+}
+
+export function validateProjectForm({ name, description }) {
+    const errors = {};
+
+    if (!name?.trim()) {
+        errors.name = "Tên project không được để trống";
+    } else if (name.trim().length < 3) {
+        errors.name = "Tên project phải có ít nhất 3 ký tự";
+    } else if (name.trim().length > 100) {
+        errors.name = "Tên project không được vượt quá 100 ký tự";
+    }
+
+    if (description && description.trim().length > 500) {
+        errors.description = "Mô tả không được vượt quá 500 ký tự";
+    }
+
+    return errors;
 }

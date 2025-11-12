@@ -17,16 +17,15 @@ function Header() {
         }
     };
     return (
-        <header className="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md">
+        <header className="bg-[#223771] text-white p-4 flex justify-between items-center z-10">
             <Link
                 to={user?.role === "admin" ? "/admin/dashboard" : "/"}
                 className="text-lg font-semibold"
             >
-                ImageManager
             </Link>
 
             <div className="flex items-center gap-4">
-                {user && <span className="text-sm"><FontAwesomeIcon icon={faUser} className="text-white-500 text-lg" /> {user.username}</span>}
+                {user && <span className="text-sm text-gray-300"><FontAwesomeIcon icon={faUser} /> {user.username}</span>}
                 {user ? (
                     <button
                         onClick={handleLogout}

@@ -15,5 +15,6 @@ export const saveData = (key, data) => {
         localStorage.setItem(key, JSON.stringify(data));
     } catch (err) {
         console.error("Error saving LocalStorage:", err);
+        throw err;
     }
 };
