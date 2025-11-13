@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUsers, faImages, faFolderOpen, faChartPie, faCloudArrowUp, faHouse, faDiagramProject, faCameraRetro } from "@fortawesome/free-solid-svg-icons";
+import { faUsers, faImages, faFolderOpen, faChartPie, faCloudArrowUp, faDiagramProject, faCameraRetro } from "@fortawesome/free-solid-svg-icons";
 
 function Sidebar() {
     const { user } = useAuth();
@@ -21,7 +21,7 @@ function Sidebar() {
             <div className="mb-6">
                 <h2 className="text-2xl font-bold tracking-wide text-white"><FontAwesomeIcon icon={faCameraRetro} />
                     <Link
-                        to={user?.role === "admin" ? "/admin/dashboard" : "/"}
+                        to={user?.role === "admin" ? "/admin/dashboard" : "/project-selection"}
                     >
                         Image Upload
                     </Link></h2>
@@ -53,7 +53,6 @@ function Sidebar() {
                     </>
                 ) : (
                     <>
-                        <Link to="/" className={linkClass("/")}><FontAwesomeIcon icon={faHouse} /> Home</Link>
                         <Link to="/project-selection" className={linkClass("/project-selection")}><FontAwesomeIcon icon={faDiagramProject} /> Project Selection</Link>
                         <Link to="/image-upload" className={linkClass("/image-upload")}><FontAwesomeIcon icon={faCloudArrowUp} /> Upload Images</Link>
                         <Link to="/gallery" className={linkClass("/gallery")}><FontAwesomeIcon icon={faImages} /> Gallery</Link>

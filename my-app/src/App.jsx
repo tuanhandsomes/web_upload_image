@@ -13,7 +13,6 @@ import Dashboard from "./pages/admin/Dashboard";
 import AccountManagement from "./pages/admin/AccountManagement";
 import ProjectManagement from "./pages/admin/ProjectManagement";
 import AllPhoto from "./pages/admin/AllPhoto";
-import Home from "./pages/user/Home";
 import ProjectSelection from "./pages/user/ProjectSelection";
 import ImageUpload from "./pages/user/ImageUpload";
 import Gallery from "./pages/user/Gallery";
@@ -52,14 +51,13 @@ function App() {
             </PrivateRoute>
           }
         >
-          <Route path="/" element={<Home />} />
           <Route path="project-selection" element={<ProjectSelection />} />
           <Route path="image-upload" element={<ImageUpload />} />
           <Route path="gallery" element={<Gallery />} />
         </Route>
 
         {/* 404 */}
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/project-selection" />} />
       </Routes>
       <ToastContainer
         position="top-right"

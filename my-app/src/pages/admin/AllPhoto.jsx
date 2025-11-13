@@ -1,6 +1,274 @@
-function AllPhoto() {
+// src/pages/admin/AllPhoto.jsx
+import { useState, useEffect, useMemo } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+    faImages,
+    faExpand,
+    faTrash,
+    faFolder,
+    faTags,
+    faFilter,
+} from "@fortawesome/free-solid-svg-icons";
+
+import { photoService } from "../../services/photoService";
+import { projectService } from "../../services/projectService";
+import { useAuth } from "../../contexts/AuthContext";
+import { toast } from "react-toastify";
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
+
+function ImageCard({ photo, onOpen, onDelete, canDelete }) {
     return (
-        <div>Welcome to AllPhoto</div>
-    )
+        <div className="relative w-full h-64 bg-gray-200 rounded-lg overflow-hidden group shadow-md">
+            <img
+                src={photo.fileUrl}
+                alt={photo.title}
+                className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-black/40 transition-all duration-300 flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100">
+                <div className="flex justify-end gap-3">
+                    <button
+                        onClick={onOpen}
+                        title="View Fullsize"
+                        className="w-10 h-10 bg-white/30 text-white rounded-full hover:bg-white/50 transition-all cursor-pointer"
+                    >
+                        <FontAwesomeIcon icon={faExpand} />
+                    </button>
+                    {canDelete && (
+                        <button
+                            onClick={onDelete}
+                            title="Delete Photo"
+                            className="w-10 h-10 bg-red-600/70 text-white rounded-full hover:bg-red-500 transition-all cursor-pointer"
+                        >
+                            <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                    )}
+                </div>
+                <div className="text-white">
+                    <p className="text-sm font-semibold truncate" title={photo.description}>
+                        {photo.description || "(No description)"}
+                    </p>
+                    <p className="text-xs opacity-80">
+                        {new Date(photo.uploadedAt).toLocaleDateString("en-US", {
+                            month: "short", day: "numeric", year: "numeric"
+                        })}
+                    </p>
+                </div>
+            </div>
+            <div className="absolute bottom-0 left-0 p-3 bg-gradient-to-t from-black/60 to-transparent w-full group-hover:opacity-0 transition-opacity duration-300">
+                <h3 className="text-white font-medium text-sm truncate" title={photo.title}>
+                    {photo.title}
+                </h3>
+            </div>
+        </div>
+    );
 }
+
+function AllPhoto() {
+    const { user: currentUser } = useAuth();
+    const [allPhotos, setAllPhotos] = useState([]);
+    const [projectList, setProjectList] = useState([]);
+    const [allTags, setAllTags] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedProjectId, setSelectedProjectId] = useState("all");
+    const [selectedTag, setSelectedTag] = useState("all");
+    const [sortOrder, setSortOrder] = useState("newest");
+    const [open, setOpen] = useState(false);
+    const [index, setIndex] = useState(0);
+
+    // --- lấy tất cả dữ liệu ---
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const [photosData, projectsData] = await Promise.all([
+                    photoService.getAll(),
+                    projectService.getAll()
+                ]);
+
+                setAllPhotos(photosData); // Lấy TẤT CẢ ảnh (không lọc userId vì là admin)
+                setProjectList(projectsData); // Lấy TẤT CẢ project
+
+                // lấy Tags (từ tất cả ảnh)
+                const tagsSet = new Set();
+                photosData.forEach(photo => {
+                    photo.tags.forEach(tag => tagsSet.add(tag));
+                });
+                setAllTags(Array.from(tagsSet).sort());
+
+            } catch (err) {
+                toast.error("Lỗi khi tải dữ liệu.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, []); // Chỉ chạy 1 lần
+
+    // --- logic lọc và sắp xếp ---
+    const filteredPhotos = useMemo(() => {
+        let photos = [...allPhotos];
+
+        // lọc theo project
+        if (selectedProjectId !== "all") {
+            const pId = parseInt(selectedProjectId, 10);
+            photos = photos.filter(p => p.projectId === pId);
+        }
+
+        // lọc theo tag
+        if (selectedTag !== "all") {
+            photos = photos.filter(p => p.tags.includes(selectedTag));
+        }
+
+        photos.sort((a, b) => {
+            if (sortOrder === 'oldest') {
+                return new Date(a.uploadedAt) - new Date(b.uploadedAt);
+            }
+            return new Date(b.uploadedAt) - new Date(a.uploadedAt);
+        });
+
+        return photos;
+    }, [allPhotos, selectedProjectId, selectedTag, sortOrder]);
+
+    // --- hàm xử lý khi open lightbox ---
+    const openLightbox = (photoIndex) => {
+        setIndex(photoIndex);
+        setOpen(true);
+    };
+
+    const handleDeletePhoto = async (photoId) => {
+        const confirmed = window.confirm("Bạn (Admin) có chắc muốn xóa ảnh này không?");
+        if (!confirmed) return;
+
+        try {
+            await photoService.delete(photoId, currentUser.id, currentUser.role);
+            toast.success("Đã xóa ảnh thành công!");
+            setAllPhotos(prevPhotos => prevPhotos.filter(p => p.id !== photoId));
+
+        } catch (err) {
+            toast.error(err.message || "Lỗi khi xóa ảnh.");
+        }
+    };
+
+    const slides = filteredPhotos.map(p => ({ src: p.fileUrl, title: p.title }));
+
+    return (
+        <div className="animate-fadeIn">
+            {/* Header */}
+            <div className="p-4 bg-white rounded-2xl shadow-lg mb-6 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                    <FontAwesomeIcon icon={faImages} className="text-3xl text-blue-500" />
+                    <div>
+                        <h1 className="text-xl font-semibold text-gray-800">
+                            All Photos (Admin View)
+                        </h1>
+                        <p className="text-gray-500 text-sm">
+                            {filteredPhotos.length} {filteredPhotos.length === 1 ? 'photo' : 'photos'} found
+                        </p>
+                    </div>
+                </div>
+                <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-3 py-2 cursor-pointer 
+                     hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+                >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                </select>
+            </div>
+
+            {/* layout 2 cột --- */}
+            <div className="flex gap-6">
+                {/* --- cột trái: filter sidebar --- */}
+                <aside className="w-64 bg-white p-5 rounded-2xl shadow-lg flex-shrink-0 h-fit">
+                    {/* filter projects */}
+                    <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                        <FontAwesomeIcon icon={faFolder} className="text-gray-400" /> PROJECTS
+                    </h3>
+                    <ul className="space-y-1 mb-6">
+                        <li>
+                            <button
+                                onClick={() => setSelectedProjectId("all")}
+                                className={`w-full text-left text-sm px-3 py-1.5 rounded-md flex items-center gap-2 ${selectedProjectId === 'all' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                            >
+                                <FontAwesomeIcon icon={faFilter} className="w-4" /> All Projects
+                            </button>
+                        </li>
+                        {projectList.map(project => (
+                            <li key={project.id}>
+                                <button
+                                    onClick={() => setSelectedProjectId(project.id)}
+                                    className={`w-full text-left text-sm px-3 py-1.5 rounded-md truncate ${selectedProjectId === project.id ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                                    title={project.name}
+                                >
+                                    {project.name}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+
+                    {/* Filter Tags */}
+                    <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                        <FontAwesomeIcon icon={faTags} className="text-gray-400" /> TAGS
+                    </h3>
+                    <ul className="space-y-1">
+                        <li>
+                            <button
+                                onClick={() => setSelectedTag("all")}
+                                className={`w-full text-left text-sm px-3 py-1.5 rounded-md flex items-center gap-2 ${selectedTag === 'all' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                            >
+                                <FontAwesomeIcon icon={faFilter} className="w-4" /> All Tags
+                            </button>
+                        </li>
+                        {allTags.map(tag => (
+                            <li key={tag}>
+                                <button
+                                    onClick={() => setSelectedTag(tag)}
+                                    className={`w-full text-left text-sm px-3 py-1.5 rounded-md capitalize ${selectedTag === tag ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                    {tag}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </aside>
+
+                {/* --- CỘT PHẢI: LƯỚI ẢNH --- */}
+                <main className="flex-1 min-w-0">
+                    {loading ? (
+                        <div className="text-center p-10 text-gray-500">Loading gallery...</div>
+                    ) : filteredPhotos.length === 0 ? (
+                        <div className="text-center p-10 text-gray-500 bg-white rounded-2xl shadow-lg">
+                            No photos found matching your filters.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {filteredPhotos.map((photo, idx) => (
+                                <ImageCard
+                                    key={photo.id}
+                                    photo={photo}
+                                    onOpen={() => openLightbox(idx)}
+                                    onDelete={() => handleDeletePhoto(photo.id)}
+                                    // Admin luôn có quyền xóa
+                                    canDelete={true}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </main>
+            </div>
+
+            {/* Component Lightbox (ẩn) */}
+            <Lightbox
+                open={open}
+                close={() => setOpen(false)}
+                slides={slides}
+                index={index}
+            />
+        </div>
+    );
+}
+
 export default AllPhoto;

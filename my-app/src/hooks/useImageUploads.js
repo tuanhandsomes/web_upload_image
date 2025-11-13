@@ -3,6 +3,7 @@ import { useDropzone } from "react-dropzone";
 import { toast } from "react-toastify";
 import { photoService } from "../services/photoService";
 import { generateClientFileId } from "../utils/imageHelper";
+import { validatePhotoMetadata } from "../utils/Validation";
 export const useImageUploads = (selectedProject, currentUser) => {
     // files: danh sách các file (đã có preview, progress, status...)
     const [files, setFiles] = useState([]);
@@ -54,9 +55,19 @@ export const useImageUploads = (selectedProject, currentUser) => {
     // --- hàm cập nhật metadata ---
     const updateFileMetadata = (id, field, value) => {
         setFiles(prevFiles =>
-            prevFiles.map(f =>
-                f.id === id ? { ...f, [field]: value } : f
-            )
+            prevFiles.map(f => {
+                if (f.id === id) {
+                    // 1. Tạo state mới
+                    const updatedFile = { ...f, [field]: value };
+
+                    // 2. Chạy validation TRÊN state MỚI
+                    const validationErrors = validatePhotoMetadata(updatedFile);
+
+                    // 3. Trả về state mới + errors
+                    return { ...updatedFile, errors: validationErrors };
+                }
+                return f; // file khác
+            })
         );
     };
     // hàm xử lý upload từng file
@@ -104,6 +115,24 @@ export const useImageUploads = (selectedProject, currentUser) => {
             toast.info("Không có file nào mới để upload.");
             setIsUploading(false);
             return;
+        }
+
+        // --- bước kiểm tra lỗi khi click vào button upload ảnh ---
+        let hasErrors = false;
+        filesToUpload.forEach(file => {
+            // Chạy validation 1 lần nữa (đề phòng)
+            const validationErrors = validatePhotoMetadata(file);
+            if (Object.keys(validationErrors).length > 0) {
+                hasErrors = true;
+                // Cập nhật state (nếu lỗi chưa được hiển thị)
+                updateFileState(file.id, { errors: validationErrors });
+            }
+        });
+
+        if (hasErrors) {
+            toast.error("Một số ảnh đang có lỗi. Vui lòng sửa lại.");
+            setIsUploading(false);
+            return; // Dừng upload
         }
 
         // Tạo một mảng các promise

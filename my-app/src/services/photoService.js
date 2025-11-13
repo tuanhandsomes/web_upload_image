@@ -77,8 +77,7 @@ export const photoService = {
         return Promise.resolve(newPhoto);
     },
 
-    // Xóa ảnh (sẽ dùng cho Phase 5)
-    delete: async (photoId, userId) => {
+    delete: async (photoId, userId, userRole) => {
         const photos = getData(PHOTO_STORAGE_KEY, []);
 
         const photoIndex = photos.findIndex(p => p.id === photoId);
@@ -88,7 +87,8 @@ export const photoService = {
 
         const photo = photos[photoIndex];
 
-        if (photo.userId !== userId) {
+        // Chỉ cho phép xóa nếu là admin hoặc là người upload ảnh
+        if (photo.userId !== userId && userRole !== "admin") {
             return Promise.reject(new Error("Bạn không có quyền xóa ảnh này."));
         }
 

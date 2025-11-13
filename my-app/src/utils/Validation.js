@@ -84,3 +84,17 @@ export function validateProjectForm({ name, description }) {
 
     return errors;
 }
+
+export function validatePhotoMetadata({ title, description }) {
+    const errors = {};
+
+    if (title && title.length > 100) {
+        errors.title = "Title không được vượt quá 100 ký tự.";
+    }
+
+    if (description && description.length > 500) {
+        errors.description = "Mô tả không được vượt quá 500 ký tự.";
+    }
+
+    return errors;
+}

@@ -3,7 +3,7 @@ import { faSpinner, faCheckCircle, faExclamationCircle, faTimes } from "@fortawe
 import { formatBytes } from "../../utils/imageHelper";
 
 function FileUploadItem({ fileObject, onRemove, onMetadataChange }) {
-    const { file, preview, status, progress, errorMessage, title, description, tags } = fileObject;
+    const { file, preview, status, progress, errorMessage, title, description, tags, errors } = fileObject;
 
     // --- Xác định màu và icon file ---
     let color = "text-gray-500";
@@ -54,9 +54,11 @@ function FileUploadItem({ fileObject, onRemove, onMetadataChange }) {
                             name="title"
                             value={title}
                             onChange={handleChange}
-                            placeholder="Title (mặc định là tên file)"
-                            className="w-full text-sm border-gray-300 rounded-md shadow-sm p-1.5 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Title (optional, mặc định là tên file)"
+                            className={`w-full text-sm border rounded-md shadow-sm p-1.5 focus:ring-blue-500 focus:border-blue-500 ${errors && errors.title ? "border-red-500" : "border-gray-300"
+                                }`}
                         />
+                        {errors && errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
                         {/* Description Input */}
                         <textarea
                             name="description"
@@ -64,8 +66,10 @@ function FileUploadItem({ fileObject, onRemove, onMetadataChange }) {
                             onChange={handleChange}
                             rows={2}
                             placeholder="Description (optional)"
-                            className="w-full text-sm border-gray-300 rounded-md shadow-sm p-1.5 focus:ring-blue-500 focus:border-blue-500"
+                            className={`w-full text-sm border rounded-md shadow-sm p-1.5 focus:ring-blue-500 focus:border-blue-500 ${errors && errors.description ? "border-red-500" : "border-gray-300"
+                                }`}
                         />
+                        {errors && errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
                         {/* Tags Input */}
                         <input
                             type="text"
@@ -73,7 +77,7 @@ function FileUploadItem({ fileObject, onRemove, onMetadataChange }) {
                             value={tags}
                             onChange={handleChange}
                             placeholder="Tags, cách nhau bằng dấu phẩy (,) "
-                            className="w-full text-sm border-gray-300 rounded-md shadow-sm p-1.5 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full text-sm border border-gray-300 rounded-md shadow-sm p-1.5 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
                 ) : (

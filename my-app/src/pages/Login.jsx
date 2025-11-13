@@ -44,7 +44,7 @@ function Login() {
 
             if (user) {
                 login(user);
-                navigate("/");
+                navigate("/project-selection");
             } else {
                 setError("Tên đăng nhập hoặc mật khẩu không đúng!");
             }
