@@ -6,7 +6,7 @@ import {
     faTrash,
     faFolder,
     faTags,
-    faFilter,
+    faFilter
 } from "@fortawesome/free-solid-svg-icons";
 
 import { photoService } from "../../services/photoService";
@@ -100,7 +100,7 @@ function ImageCard({ photo, onOpen, onDelete, canDelete }) {
                 </h3>
 
                 <p className="text-white text-sm opacity-90 truncate" title={photo.description}>
-                    {photo.description || ""}
+                    {photo.description || "(No description)"}
                 </p>
                 <p className="text-white text-xs opacity-70 mt-1">
                     {timeAgo(photo.uploadedAt)}
