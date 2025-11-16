@@ -117,34 +117,19 @@ export const useImageUploads = (selectedProject, currentUser) => {
             return;
         }
 
-        // --- bước kiểm tra lỗi khi click vào button upload ảnh ---
-        let hasErrors = false;
-        filesToUpload.forEach(file => {
-            // Chạy validation 1 lần nữa (đề phòng)
-            const validationErrors = validatePhotoMetadata(file);
-            if (Object.keys(validationErrors).length > 0) {
-                hasErrors = true;
-                // Cập nhật state (nếu lỗi chưa được hiển thị)
-                updateFileState(file.id, { errors: validationErrors });
+        // Đếm số file thất bại
+        let failedCount = 0;
+        // Duyệt từng file trong danh sách cần upload
+        for (const fileObj of filesToUpload) {
+            try {
+                await processUpload(fileObj);
+            } catch (err) {
+                // Nếu 'processUpload' ném lỗi, đếm nó
+                failedCount++;
             }
-        });
-
-        if (hasErrors) {
-            toast.error("Một số ảnh đang có lỗi. Vui lòng sửa lại.");
-            setIsUploading(false);
-            return; // Dừng upload
         }
 
-        // Tạo một mảng các promise
-        const uploadPromises = filesToUpload.map(fileObj => processUpload(fileObj));
-
-        // Chờ TẤT CẢ các promise chạy xong (dù thành công hay thất bại)
-        const results = await Promise.allSettled(uploadPromises);
-
         setIsUploading(false);
-
-        // Đếm số file thất bại
-        const failedCount = results.filter(r => r.status === 'rejected').length;
 
         if (failedCount > 0) {
             // Lỗi từ 'processUpload' đã được gán vào 'errorMessage' của file

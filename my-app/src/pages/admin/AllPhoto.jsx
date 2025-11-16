@@ -8,6 +8,7 @@ import {
     faFolder,
     faTags,
     faFilter,
+    faUser
 } from "@fortawesome/free-solid-svg-icons";
 
 import { photoService } from "../../services/photoService";
@@ -18,14 +19,44 @@ import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 
 function ImageCard({ photo, onOpen, onDelete, canDelete }) {
+
+    // Hàm tiện ích timeAgo(chuyển ngày)
+    const timeAgo = (dateString) => {
+        const date = new Date(dateString);
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 86400; // Tính theo ngày
+        if (interval > 1) {
+            if (interval > 365) return `${Math.floor(interval / 365)} years ago`;
+            if (interval > 30) return `${Math.floor(interval / 30)} months ago`;
+            return `${Math.floor(interval)} days ago`;
+        }
+        interval = seconds / 3600;
+        if (interval > 1) return `${Math.floor(interval)} hours ago`;
+        interval = seconds / 60;
+        if (interval > 1) return `${Math.floor(interval)} minutes ago`;
+        return `${Math.floor(seconds)} seconds ago`;
+    };
+
     return (
-        <div className="relative w-full h-64 bg-gray-200 rounded-lg overflow-hidden group shadow-md">
+        <div className="relative w-full h-64 bg-gray-200 rounded-lg overflow-hidden shadow-md group">
+            {/* Ảnh (Nền) */}
             <img
                 src={photo.fileUrl}
                 alt={photo.title}
                 className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-black/40 transition-all duration-300 flex flex-col justify-between p-4 opacity-0 group-hover:opacity-100">
+
+            {/* - Mặc định: 'hidden' (Ẩn hoàn toàn trên di động)
+              - Trên 'lg:' (Desktop): 'lg:flex' (Hiện)
+              - Bắt đầu: 'opacity-0' (Ẩn)
+              - Khi 'group' (cha) được hover: 'group-hover:opacity-100' (Hiện)
+            */}
+            <div className="absolute inset-0 bg-black/40 transition-all duration-300 
+                        hidden lg:flex 
+                        opacity-0 group-hover:opacity-100 
+                        flex-col justify-between p-4">
+
+                {/* Nút bấm (Desktop) */}
                 <div className="flex justify-end gap-3">
                     <button
                         onClick={onOpen}
@@ -44,21 +75,61 @@ function ImageCard({ photo, onOpen, onDelete, canDelete }) {
                         </button>
                     )}
                 </div>
+
+                {/* Thông tin (Desktop) */}
                 <div className="text-white">
-                    <p className="text-sm font-semibold truncate" title={photo.description}>
+                    <h3 className="font-semibold text-lg truncate" title={photo.title}>
+                        {photo.title}
+                    </h3>
+                    <p className="text-sm truncate" title={photo.description}>
                         {photo.description || "(No description)"}
                     </p>
-                    <p className="text-xs opacity-80">
-                        {new Date(photo.uploadedAt).toLocaleDateString("en-US", {
-                            month: "short", day: "numeric", year: "numeric"
-                        })}
+                    <p className="text-white text-xs opacity-70 mt-1">
+                        {timeAgo(photo.uploadedAt)}
                     </p>
                 </div>
             </div>
-            <div className="absolute bottom-0 left-0 p-3 bg-gradient-to-t from-black/60 to-transparent w-full group-hover:opacity-0 transition-opacity duration-300">
-                <h3 className="text-white font-medium text-sm truncate" title={photo.title}>
+
+            {/* --- lớp phủ title (chỉ dành cho di động/tablet) --- */}
+            {/* - Mặc định: 'block' (Hiện)
+              - Trên 'xl:' (Desktop): 'xl:hidden' (Ẩn đi)
+            */}
+            <div className="absolute bottom-0 left-0 p-3 bg-gradient-to-t from-black/70 to-transparent w-full 
+                        xl:hidden">
+                <h3 className="text-white font-medium text-base truncate" title={photo.title}>
                     {photo.title}
                 </h3>
+
+                <p className="text-white text-sm opacity-90 truncate" title={photo.description}>
+                    {photo.description || ""}
+                </p>
+                <p className="text-white text-xs opacity-70 mt-1">
+                    {timeAgo(photo.uploadedAt)}
+                </p>
+            </div>
+
+            {/* --- lớp phủ nút bấm (chỉ dành cho di động/tablet) --- */}
+            {/* - Mặc định: 'flex' (Hiện)
+              - Trên 'xl:' (Desktop): 'xl:hidden' (Ẩn đi)
+            */}
+            <div className="absolute top-3 right-3 flex flex-row gap-2 
+                        xl:hidden">
+                <button
+                    onClick={onOpen}
+                    title="View Fullsize"
+                    className="w-9 h-9 bg-white/70 text-black rounded-full shadow-md"
+                >
+                    <FontAwesomeIcon icon={faExpand} />
+                </button>
+                {canDelete && (
+                    <button
+                        onClick={onDelete}
+                        title="Delete Photo"
+                        className="w-9 h-9 bg-red-600 text-white rounded-full shadow-md"
+                    >
+                        <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -66,13 +137,16 @@ function ImageCard({ photo, onOpen, onDelete, canDelete }) {
 
 function AllPhoto() {
     const { user: currentUser } = useAuth();
+
     const [allPhotos, setAllPhotos] = useState([]);
     const [projectList, setProjectList] = useState([]);
     const [allTags, setAllTags] = useState([]);
     const [loading, setLoading] = useState(true);
+
     const [selectedProjectId, setSelectedProjectId] = useState("all");
     const [selectedTag, setSelectedTag] = useState("all");
     const [sortOrder, setSortOrder] = useState("newest");
+
     const [open, setOpen] = useState(false);
     const [index, setIndex] = useState(0);
 
@@ -86,8 +160,8 @@ function AllPhoto() {
                     projectService.getAll()
                 ]);
 
-                setAllPhotos(photosData); // Lấy TẤT CẢ ảnh (không lọc userId vì là admin)
-                setProjectList(projectsData); // Lấy TẤT CẢ project
+                setAllPhotos(photosData); // Lấy tất cả ảnh (không lọc userId vì là admin)
+                setProjectList(projectsData); // Lấy tất cả project
 
                 // lấy Tags (từ tất cả ảnh)
                 const tagsSet = new Set();
@@ -180,9 +254,9 @@ function AllPhoto() {
             </div>
 
             {/* layout 2 cột --- */}
-            <div className="flex gap-6">
+            <div className="flex flex-col md:flex-row gap-6">
                 {/* --- cột trái: filter sidebar --- */}
-                <aside className="w-64 bg-white p-5 rounded-2xl shadow-lg flex-shrink-0 h-fit">
+                <aside className="w-full md:w-64 bg-white p-5 rounded-2xl shadow-lg flex-shrink-0 h-fit">
                     {/* filter projects */}
                     <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
                         <FontAwesomeIcon icon={faFolder} className="text-gray-400" /> PROJECTS

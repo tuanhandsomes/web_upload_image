@@ -1,4 +1,3 @@
-// src/pages/admin/ProjectManagement.jsx
 import { useState, useEffect, useMemo } from "react";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -28,6 +27,7 @@ function ProjectCard({ project, onEdit, onDelete }) {
         ? "bg-green-100 text-green-700"
         : "bg-red-100 text-red-700";
 
+    // JSX của từng card dự án
     return (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
             <div className="h-48 bg-gray-200 flex items-center justify-center">
@@ -77,7 +77,7 @@ function ProjectCard({ project, onEdit, onDelete }) {
                 <p className="text-gray-600 text-sm h-16">{project.description}</p>
             </div>
 
-            {/* 3. Chân Card (Stats) */}
+            {/* Chân Card (Stats) */}
             <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center text-xs text-gray-500">
                 <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1">
@@ -100,7 +100,6 @@ function ProjectCard({ project, onEdit, onDelete }) {
     );
 }
 
-// --- COMPONENT TRANG CHÍNH ---
 function ProjectManagement() {
     const { user: currentUser } = useAuth(); // Lấy admin đang đăng nhập
     const [projectList, setProjectList] = useState([]);
@@ -115,7 +114,6 @@ function ProjectManagement() {
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
 
-    // --- 1. LẤY DỮ LIỆU ---
     const fetchProjects = async () => {
         setLoading(true);
         try {
@@ -132,7 +130,7 @@ function ProjectManagement() {
         fetchProjects();
     }, []);
 
-    // --- 2. LỌC VÀ SẮP XẾP DỮ LIỆU ---
+    // --- lọc và sắp xếp dữ liệu ---
     const filteredProjects = useMemo(() => {
         let projects = [...projectList];
 
@@ -164,7 +162,6 @@ function ProjectManagement() {
         return projects;
     }, [projectList, search, statusFilter, sortOrder]);
 
-    // --- 3. HÀM HANDLE ---
     const handleCreateProject = async (projectData) => {
         try {
             await projectService.create(projectData, currentUser.id);
@@ -216,11 +213,9 @@ function ProjectManagement() {
         }
     };
 
-    // --- 4. RENDER (JSX) ---
     return (
         <div className="p-6 animate-fadeIn">
-            {/* Header: Title + Nút Create */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
                 <div>
                     <h1 className="text-2xl font-semibold text-gray-800">
                         Project Management
@@ -231,52 +226,56 @@ function ProjectManagement() {
                 </div>
                 <button
                     onClick={() => setShowCreateForm(true)}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg 
-                     hover:bg-blue-700 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg 
+                        hover:bg-blue-700 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm
+                       w-full md:w-auto" // w-full (di động), md:w-auto (desktop)
                 >
                     <FontAwesomeIcon icon={faPlus} /> Create Project
                 </button>
             </div>
-
-            {/* Filter Bar */}
-            <div className="bg-white shadow-sm rounded-xl p-4 mb-6 flex flex-wrap gap-3 items-center">
-                {/* Search */}
-                <div className="relative flex-grow sm:flex-grow-0 sm:w-1/3">
+            {/* filter bar */}
+            <div className="bg-white shadow-sm rounded-xl p-4 mb-6 
+                        flex flex-col md:flex-row md:flex-wrap gap-3 md:items-center">
+                {/* Search: w-full (di động), md:w-1/3 (desktop) */}
+                <div className="relative w-full md:flex-grow-0 md:w-1/3">
                     <input
                         type="text"
                         placeholder="Search projects..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="border border-gray-300 rounded-lg pl-10 pr-4 py-2 w-full
-                         focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                    focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                     />
                     <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
-                {/* Filter Status */}
+
+                {/* Filter Status: w-full (di động), md:w-auto (desktop) */}
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 cursor-pointer 
-                     hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200 "
+                                hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200 
+                                w-full md:w-auto"
                 >
                     <option value="all">All Status</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
-                {/* Sort Order */}
+
+                {/* Sort Order: w-full (di động), md:w-auto (desktop) */}
                 <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 cursor-pointer 
-                     hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+                                hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200
+                                w-full md:w-auto"
                 >
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
                     <option value="name">Name (A-Z)</option>
                 </select>
             </div>
-
-            {/* Grid Dữ liệu */}
+            {/* Grid dữ liệu */}
             {loading ? (
                 <div className="text-center p-10 text-gray-500">Loading projects...</div>
             ) : filteredProjects.length === 0 ? (
@@ -301,12 +300,11 @@ function ProjectManagement() {
                     onSave={handleCreateProject}
                 />
             )}
-
             {editingProject && (
                 <EditProjectForm
                     project={editingProject}
                     onClose={() => setEditingProject(null)}
-                    onSave={handleUpdateProject}
+                    s onSave={handleUpdateProject}
                 />
             )}
         </div>

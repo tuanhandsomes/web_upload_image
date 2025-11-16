@@ -48,11 +48,17 @@ function AccountManagement() {
 
     // Chuẩn hóa dữ liệu để hiển thị ra bảng
     const users = useMemo(() => {
-        return userList.map((acc) => ({
+        // Tạo bản sao và Sắp xếp (sort) theo ngày tạo
+        // (b.createdAt - a.createdAt) = Mới nhất lên đầu
+        const sortedList = [...userList].sort((a, b) => {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
+        // 2. Map (tạo list) từ danh sách đã sắp xếp
+        return sortedList.map((acc) => ({
             id: acc.id,
             name: acc.username,
             email: acc.email,
-            // Chuẩn hóa hiển thị (viết hoa chữ cái đầu)
             role: acc.role.charAt(0).toUpperCase() + acc.role.slice(1),
             status: acc.status.charAt(0).toUpperCase() + acc.status.slice(1),
             created: new Date(acc.createdAt).toLocaleDateString("en-US", {
@@ -130,22 +136,24 @@ function AccountManagement() {
 
     return (
         <div className="p-6 animate-fadeIn">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
                 <h1 className="text-2xl font-semibold text-gray-800">
                     Account Management
                 </h1>
                 <button
                     onClick={() => setShowForm(true)}
-                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg 
-                     hover:bg-blue-700 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm"
+                    className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg 
+                        hover:bg-blue-700 active:scale-95 transition-all duration-200 cursor-pointer shadow-sm
+                       w-full md:w-auto"
                 >
                     <FontAwesomeIcon icon={faPlus} /> Add Account
                 </button>
             </div>
 
             {/* Search & Filters (Sửa value của Filter) */}
-            <div className="bg-white shadow-sm rounded-xl p-4 mb-6 flex flex-wrap gap-3 items-center">
-                <div className="relative flex-grow sm:flex-grow-0 sm:w-1/3">
+            <div className="bg-white shadow-sm rounded-xl p-4 mb-6 
+                        flex flex-col md:flex-row md:flex-wrap gap-3 md:items-center">
+                <div className="relative w-full md:flex-grow-0 md:w-1/3">
                     <input
                         type="text"
                         placeholder="Search accounts..."
@@ -161,7 +169,7 @@ function AccountManagement() {
                     value={roleFilter}
                     onChange={(e) => setRoleFilter(e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 cursor-pointer 
-                     hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+                     hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200 w-full md:w-auto"
                 >
                     <option value="All">All Roles</option>
                     <option value="Admin">Admin</option>
@@ -171,7 +179,7 @@ function AccountManagement() {
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="border border-gray-300 rounded-lg px-3 py-2 cursor-pointer 
-                     hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+                     hover:border-blue-400 focus:ring-2 focus:ring-blue-400 transition-all duration-200 w-full md:w-auto"
                 >
                     <option value="All">All Status</option>
                     <option value="Active">Active</option>
@@ -180,7 +188,7 @@ function AccountManagement() {
             </div>
 
             {/* User Table (Thêm xử lý loading) */}
-            <div className="bg-white shadow-md rounded-xl overflow-hidden">
+            <div className="bg-white shadow-md rounded-xl overflow-hidden overflow-x-auto">
                 <table className="min-w-full">
                     <thead className="bg-gray-40 text-gray-600 text-sm">
                         <tr>
@@ -270,8 +278,9 @@ function AccountManagement() {
 
                 {/* Pagination (Chỉ hiển thị nếu có dữ liệu và không loading) */}
                 {!loading && totalPages > 1 && (
-                    <div className="p-4 text-gray-500 text-sm border-t border-gray-300 bg-gray-50 flex justify-between items-center">
-                        <span>
+                    <div className="p-4 text-gray-500 text-sm border-t border-gray-300 bg-gray-50 
+                                  flex flex-col sm:flex-row justify-center sm:justify-between items-center gap-4">
+                        <span className="text-center sm:text-left">
                             Showing {startIndex + 1} to{" "}
                             {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of{" "}
                             {filteredUsers.length} results

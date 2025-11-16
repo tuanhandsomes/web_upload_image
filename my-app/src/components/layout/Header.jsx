@@ -1,10 +1,12 @@
+// src/components/layout/Header.jsx
 import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser } from "@fortawesome/free-solid-svg-icons";
+import { faUser, faBars } from "@fortawesome/free-solid-svg-icons";
 
-function Header() {
+// Nhận prop onMenuToggle
+function Header({ onMenuToggle }) {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
@@ -16,16 +18,22 @@ function Header() {
             navigate('/login');
         }
     };
+
     return (
         <header className="bg-[#223771] text-white p-4 flex justify-between items-center z-10">
-            <Link
-                to={user?.role === "admin" ? "/admin/dashboard" : "/"}
-                className="text-lg font-semibold"
-            >
-            </Link>
+            <div className="flex items-center gap-4">
+                {/* Nút Hamburger (chỉ hiện trên di động) */}
+                <button
+                    onClick={onMenuToggle}
+                    className="text-white text-xl lg:hidden" // Ẩn trên desktop (lg:hidden)
+                    aria-label="Toggle menu"
+                >
+                    <FontAwesomeIcon icon={faBars} />
+                </button>
+            </div>
 
             <div className="flex items-center gap-4">
-                {user && <span className="text-sm text-gray-300"><FontAwesomeIcon icon={faUser} /> {user.username}</span>}
+                {user && <span className="text-sm text-blue-200 sm:block"><FontAwesomeIcon icon={faUser} /> {user.username}</span>}
                 {user ? (
                     <button
                         onClick={handleLogout}

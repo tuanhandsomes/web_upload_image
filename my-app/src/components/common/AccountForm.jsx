@@ -69,7 +69,7 @@ function AccountForm({ onClose, onSave }) {
                     Add a new user account to the system
                 </p>
 
-                {/* HIỂN THỊ LỖI TỪ SERVICE */}
+                {/* Hiển thị lỗi từ service */}
                 {serviceError && (
                     <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">
                         {serviceError}
@@ -77,7 +77,7 @@ function AccountForm({ onClose, onSave }) {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Username */}
                         <div>
                             <label className="block text-sm font-medium mb-1">

@@ -45,7 +45,7 @@ function EditAccountForm({ account, onClose, onSave }) {
         e.preventDefault();
         setServiceError(null);
 
-        // 1. Validate form
+        // Validate form
         const validationErrors = validateAccountForm(form);
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
@@ -54,7 +54,7 @@ function EditAccountForm({ account, onClose, onSave }) {
 
         setLoading(true);
 
-        // 2. Tách dữ liệu form
+        // Tách dữ liệu form
         const accountData = {
             username: form.username,
             email: form.email,
@@ -63,7 +63,7 @@ function EditAccountForm({ account, onClose, onSave }) {
             status: form.status,
         };
 
-        // 3. Gọi onSave (sẽ gọi service)
+        // Gọi onSave (sẽ gọi service)
         onSave(account.id, accountData) // Gửi ID và dữ liệu mới
             .then(() => {
                 // Thành công, component cha sẽ đóng form
@@ -83,7 +83,7 @@ function EditAccountForm({ account, onClose, onSave }) {
                 <h2 className="text-xl font-semibold mb-2">Edit Account</h2>
                 <p className="text-gray-500 mb-4 text-sm">Update user account information</p>
 
-                {/* HIỂN THỊ LỖI TỪ SERVICE */}
+                {/* Hiển thị lỗi từ service */}
                 {serviceError && (
                     <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4 text-sm">
                         {serviceError}
@@ -91,7 +91,7 @@ function EditAccountForm({ account, onClose, onSave }) {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {/* Username */}
                         <div>
                             <label className="block text-sm font-medium mb-1">
@@ -126,8 +126,7 @@ function EditAccountForm({ account, onClose, onSave }) {
                             />
                             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                         </div>
-
-                        {/* Password (có thể để trống nếu không muốn thay đổi, nhưng validation hiện tại đang bắt buộc) */}
+                        {/* Password */}
                         <div>
                             <label className="block text-sm font-medium mb-1">
                                 Password <span className="text-red-500">*</span>
