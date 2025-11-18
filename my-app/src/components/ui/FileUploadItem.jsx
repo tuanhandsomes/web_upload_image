@@ -1,10 +1,19 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner, faCheckCircle, faExclamationCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { formatBytes } from "../../utils/imageHelper";
+import { useEffect } from "react";
 
 function FileUploadItem({ fileObject, onRemove, onMetadataChange }) {
     const { file, preview, status, progress, errorMessage, title, description, tags, errors } = fileObject;
 
+    // Cleanup blob URL when component unmounts
+    useEffect(() => {
+        return () => {
+            if (preview && preview.startsWith('blob:')) {
+                URL.revokeObjectURL(preview);
+            }
+        };
+    }, [preview]);
     // --- Xác định màu và icon file ---
     let color = "text-gray-500";
     let icon = faSpinner;
