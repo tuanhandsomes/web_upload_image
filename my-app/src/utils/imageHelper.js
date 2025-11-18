@@ -18,7 +18,7 @@ export const formatBytes = (bytes, decimals = 2) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]; // Hàm format
 };
 
-// Hàm helper để tạo ID duy nhất cho file ở client theo tên, kích thước và thời gian
+// Hàm helper để tạo ID duy nhất cho file ở client theo tên, kích thước và timestamp
 export const generateClientFileId = (file) => {
-    return `${file.name}-${file.size}-${file.lastModified}`;
+    return `${file.name}_${file.size}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
