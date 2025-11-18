@@ -5,6 +5,7 @@ import { accountService } from "../services/accountService";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShieldAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import validateCredentials from "../utils/Validation";
+import bcrypt from 'bcryptjs';
 
 function AdminLogin() {
     const [credentials, setCredentials] = useState({ username: "", password: "" });
@@ -33,7 +34,7 @@ function AdminLogin() {
                 (a) =>
                     (a.username.toLowerCase() === credentials.username.toLowerCase() ||
                         a.email.toLowerCase() === credentials.username.toLowerCase()) &&
-                    a.password === credentials.password &&
+                    bcrypt.compareSync(credentials.password, a.password) &&
                     a.role.toLowerCase() === "admin" &&
                     a.status.toLowerCase() === "active"
             );

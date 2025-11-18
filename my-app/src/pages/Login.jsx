@@ -5,6 +5,7 @@ import { accountService } from "../services/accountService";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faImages, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import validateCredentials from "../utils/Validation";
+import bcrypt from 'bcryptjs';
 
 function Login() {
     const [credentials, setCredentials] = useState({ username: "", password: "" });
@@ -37,7 +38,7 @@ function Login() {
                 (a) =>
                     (a.username.toLowerCase() === credentials.username.toLowerCase() ||
                         a.email.toLowerCase() === credentials.username.toLowerCase()) &&
-                    a.password === credentials.password &&
+                    bcrypt.compareSync(credentials.password, a.password) &&
                     a.role.toLowerCase() === "user" &&
                     a.status.toLowerCase() === "active"
             );

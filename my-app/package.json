@@ -16,6 +16,9 @@
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.0",
     "@highcharts/react": "^4.1.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.3",
     "highcharts-react-official": "^3.2.3",
     "lucide-react": "^0.545.0",
     "react": "^19.1.1",
@@ -23,10 +26,8 @@
     "react-dropzone": "^14.3.8",
     "react-router-dom": "^6.30.1",
     "react-toastify": "^11.0.5",
-    "yet-another-react-lightbox": "^3.25.0",
-    "@tailwindcss/vite": "^4.1.14",
-    "axios": "^1.12.2",
-    "tailwindcss": "^4.1.14"
+    "tailwindcss": "^4.1.14",
+    "yet-another-react-lightbox": "^3.25.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
