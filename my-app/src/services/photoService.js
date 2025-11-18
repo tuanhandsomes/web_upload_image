@@ -5,6 +5,9 @@ import { convertFileToBase64 } from "../utils/imageHelper";
 
 const PHOTO_STORAGE_KEY = "photos";
 
+// Queue để xử lý upload tuần tự, tránh race condition
+let uploadQueue = Promise.resolve();
+
 const initPhotos = () => {
     const stored = getData(PHOTO_STORAGE_KEY);
     if (!stored || stored.length === 0) {
@@ -31,50 +34,66 @@ export const photoService = {
     },
 
     create: async (photoData, file, userId) => {
-        const photos = getData(PHOTO_STORAGE_KEY, []);
+        // Thêm vào queue để xử lý tuần tự
+        return new Promise((resolve, reject) => {
+            uploadQueue = uploadQueue.then(async () => {
+                try {
+                    if (file.size > 5 * 1024 * 1024) { // 5MB
+                        throw new Error("File quá lớn. Tối đa 5MB.");
+                    }
 
-        if (file.size > 5 * 1024 * 1024) { // 5MB
-            return Promise.reject(new Error("File quá lớn. Tối đa 5MB."));
-        }
+                    let fileUrl;
+                    try {
+                        fileUrl = await convertFileToBase64(file);
+                    } catch (err) {
+                        throw new Error("Lỗi khi đọc file ảnh.");
+                    }
 
-        let fileUrl;
-        try {
-            fileUrl = await convertFileToBase64(file);
-        } catch (err) {
-            return Promise.reject(new Error("Lỗi khi đọc file ảnh."));
-        }
+                    // Đọc lại photos từ storage để đảm bảo có dữ liệu mới nhất
+                    const photos = getData(PHOTO_STORAGE_KEY, []);
+                    const newId = photos.length > 0 ? Math.max(...photos.map((p) => p.id)) + 1 : 1;
 
-        const newId = photos.length > 0 ? Math.max(...photos.map((p) => p.id)) + 1 : 1;
+                    const newPhoto = {
+                        id: newId,
+                        projectId: photoData.projectId,
+                        userId: userId,
+                        title: photoData.title || file.name,
+                        description: photoData.description || "",
+                        tags: photoData.tags || [],
+                        fileName: file.name,
+                        fileSize: file.size,
+                        fileUrl: fileUrl,
+                        uploadedAt: new Date().toISOString(),
+                    };
 
-        const newPhoto = {
-            id: newId,
-            projectId: photoData.projectId,
-            userId: userId,
-            title: photoData.title || file.name,
-            description: photoData.description || "",
-            tags: photoData.tags || [],
-            fileName: file.name,
-            fileSize: file.size,
-            fileUrl: fileUrl,
-            uploadedAt: new Date().toISOString(),
-        };
+                    // Lưu photo ngay lập tức
+                    const updatedList = [...photos, newPhoto];
+                    saveData(PHOTO_STORAGE_KEY, updatedList);
 
-        const updatedList = [...photos, newPhoto];
-        saveData(PHOTO_STORAGE_KEY, updatedList);
+                    // Cập nhật project count
+                    const project = await projectService.getById(photoData.projectId);
+                    if (project) {
+                        // Đọc lại projects từ storage để đảm bảo có dữ liệu mới nhất
+                        const projects = getData("projects", []);
+                        const currentProject = projects.find(p => p.id === photoData.projectId);
 
-        // Nếu hàm này lỗi, nó sẽ ném lỗi ra ngoài cho hook useImageUploads bắt
-        const project = await projectService.getById(photoData.projectId);
-        if (project) {
-            const updatedProject = {
-                ...project,
-                photoCount: project.photoCount + 1,
-                coverPhotoUrl: newPhoto.fileUrl
-            };
-            // Dòng này sẽ ném lỗi nếu logic "update" của projectService bị sai
-            await projectService.update(project.id, updatedProject);
-        }
+                        if (currentProject) {
+                            const updatedProject = {
+                                ...currentProject,
+                                photoCount: currentProject.photoCount + 1,
+                                coverPhotoUrl: currentProject.coverPhotoUrl || newPhoto.fileUrl
+                            };
 
-        return Promise.resolve(newPhoto);
+                            await projectService.update(project.id, updatedProject);
+                        }
+                    }
+
+                    resolve(newPhoto);
+                } catch (error) {
+                    reject(error);
+                }
+            }).catch(reject);
+        });
     },
 
     delete: async (photoId, userId, userRole) => {

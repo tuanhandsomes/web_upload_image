@@ -117,22 +117,24 @@ export const useImageUploads = (selectedProject, currentUser) => {
             return;
         }
 
-        // Đếm số file thất bại
-        // Upload parallel với Promise.allSettled
+        // Upload tất cả ảnh đồng thời (parallel)
+        // photoService.create đã xử lý queue nội bộ để tránh race condition
         const results = await Promise.allSettled(
             filesToUpload.map(fileObj => processUpload(fileObj))
         );
 
+        const successCount = results.filter(r => r.status === 'fulfilled').length;
         const failedCount = results.filter(r => r.status === 'rejected').length;
         setIsUploading(false);
 
         if (failedCount > 0) {
-            // Lỗi từ 'processUpload' đã được gán vào 'errorMessage' của file
-            // và sẽ được bắt bởi catch trong 'processUpload'.
-            // Ở đây là thông báo chung.
-            toast.error(`Có ${failedCount} file upload thất bại (có thể do hết dung lượng LocalStorage).`);
+            if (successCount > 0) {
+                toast.warning(`Upload hoàn tất: ${successCount} thành công, ${failedCount} thất bại.`);
+            } else {
+                toast.error(`Tất cả ${failedCount} file đều upload thất bại (có thể do hết dung lượng LocalStorage).`);
+            }
         } else {
-            toast.success("Tất cả file đã upload thành công!");
+            toast.success(`Đã upload thành công ${successCount} ảnh!`);
         }
     };
 
