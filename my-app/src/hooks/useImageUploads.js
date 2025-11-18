@@ -118,17 +118,12 @@ export const useImageUploads = (selectedProject, currentUser) => {
         }
 
         // Đếm số file thất bại
-        let failedCount = 0;
-        // Duyệt từng file trong danh sách cần upload
-        for (const fileObj of filesToUpload) {
-            try {
-                await processUpload(fileObj);
-            } catch (err) {
-                // Nếu 'processUpload' ném lỗi, đếm nó
-                failedCount++;
-            }
-        }
+        // Upload parallel với Promise.allSettled
+        const results = await Promise.allSettled(
+            filesToUpload.map(fileObj => processUpload(fileObj))
+        );
 
+        const failedCount = results.filter(r => r.status === 'rejected').length;
         setIsUploading(false);
 
         if (failedCount > 0) {
