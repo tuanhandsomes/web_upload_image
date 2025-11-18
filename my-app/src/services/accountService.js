@@ -85,7 +85,15 @@ export const accountService = {
             return Promise.reject(new Error("Account not found"));
         }
 
-        // 1. Kiểm tra trùng lặp (bỏ qua chính mình)
+        // Prevent admin from deactivating themselves
+        const currentAccount = accounts[index];
+        if (currentAccount.id === id &&
+            currentAccount.role === 'admin' &&
+            accountData.status === 'inactive') {
+            return Promise.reject(new Error("Bạn không thể tự deactivate tài khoản admin của mình!"));
+        }
+
+        // Kiểm tra trùng lặp (bỏ qua chính mình)
         const usernameExists = accounts.some(
             (acc) =>
                 acc.username.toLowerCase() === accountData.username.toLowerCase() &&
