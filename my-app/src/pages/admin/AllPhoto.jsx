@@ -184,8 +184,8 @@ function AllPhoto() {
 
         // lọc theo project
         if (selectedProjectId !== "all") {
-            const pId = parseInt(selectedProjectId, 10);
-            photos = photos.filter(p => p.projectId === pId);
+            // So sánh chuỗi ID (vì json-server dùng string ID)
+            photos = photos.filter(p => String(p.projectId) === String(selectedProjectId));
         }
 
         // lọc theo tag
@@ -282,32 +282,40 @@ function AllPhoto() {
                     </ul>
 
                     {/* Filter Tags */}
-                    <h3 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
                         <FontAwesomeIcon icon={faTags} className="text-gray-400" /> TAGS
                     </h3>
-                    <ul className="space-y-1">
-                        <li>
-                            <button
-                                onClick={() => setSelectedTag("all")}
-                                className={`w-full text-left text-sm px-3 py-1.5 rounded-md flex items-center gap-2 ${selectedTag === 'all' ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-                            >
-                                <FontAwesomeIcon icon={faFilter} className="w-4" /> All Tags
-                            </button>
-                        </li>
+
+                    {/* giao diện tags  */}
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => setSelectedTag("all")}
+                            className={`px-3 py-1 text-xs font-medium rounded-full border transition-all
+                            ${selectedTag === 'all'
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                    : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-500'
+                                }`}
+                        >
+                            All
+                        </button>
+
                         {allTags.map(tag => (
-                            <li key={tag}>
-                                <button
-                                    onClick={() => setSelectedTag(tag)}
-                                    className={`w-full text-left text-sm px-3 py-1.5 rounded-md capitalize ${selectedTag === tag ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-                                >
-                                    {tag}
-                                </button>
-                            </li>
+                            <button
+                                key={tag}
+                                onClick={() => setSelectedTag(tag)}
+                                className={`px-3 py-1 text-xs font-medium rounded-full border transition-all capitalize
+                                ${selectedTag === tag
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                        : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-500'
+                                    }`}
+                            >
+                                {tag}
+                            </button>
                         ))}
-                    </ul>
+                    </div>
                 </aside>
 
-                {/* --- CỘT PHẢI: LƯỚI ẢNH --- */}
+                {/* --- cột phải: lưới ảnh --- */}
                 <main className="flex-1 min-w-0">
                     {loading ? (
                         <div className="text-center p-10 text-gray-500">Loading gallery...</div>

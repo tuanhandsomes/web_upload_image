@@ -1,92 +1,90 @@
-// src/services/projectService.js
-import projectsData from "../mockData/projects.json";
-import { getData, saveData } from "../utils/storage";
-
-const STORAGE_KEY = "projects";
-
-const initProjects = () => {
-    const stored = getData(STORAGE_KEY);
-    if (!stored || stored.length === 0) {
-        saveData(STORAGE_KEY, projectsData.projects);
-        return projectsData.projects;
-    }
-    return stored;
-};
-
-initProjects();
+const API_URL = 'http://localhost:3001/projects';
 
 export const projectService = {
-    getAll: () => {
-        const projects = getData(STORAGE_KEY, []);
-        return Promise.resolve(projects);
+    // Lấy tất cả project
+    getAll: async () => {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        return await response.json();
     },
 
-    getById: (id) => {
-        const projects = getData(STORAGE_KEY, []);
-        const project = projects.find((p) => p.id === id);
-        return Promise.resolve(project);
+    // Lấy project theo ID
+    getById: async (id) => {
+        const response = await fetch(`${API_URL}/${id}`);
+        if (!response.ok) throw new Error('Project not found');
+        return await response.json();
     },
 
-    create: (projectData, createdByUserId) => {
-        const projects = getData(STORAGE_KEY, []);
+    // Tạo project mới
+    create: async (projectData, createdByUserId) => {
+        // 1. Kiểm tra trùng tên (Case-insensitive)
+        const name = projectData.name.trim();
+        const checkRes = await fetch(`${API_URL}?name=${name}`);
+        const checkData = await checkRes.json();
 
-        const nameExists = projects.some(
-            (p) => p.name.toLowerCase() === projectData.name.toLowerCase()
+        // Kiểm tra kỹ hơn về chữ hoa/thường
+        const nameExists = checkData.some(
+            (p) => p.name.toLowerCase() === name.toLowerCase()
         );
+
         if (nameExists) {
-            return Promise.reject(new Error("Tên project đã tồn tại"));
+            throw new Error("Tên project đã tồn tại");
         }
 
-        const newId = projects.length > 0 ? Math.max(...projects.map((p) => p.id)) + 1 : 1;
-
+        // 2. Tạo object project mới
         const newProject = {
-            id: newId,
-            name: projectData.name.trim(),
+            id: String(Date.now()), // ID dạng string cho json-server
+            name: name,
             description: projectData.description.trim(),
             status: projectData.status,
             photoCount: 0,
+            coverPhotoUrl: null,
             createdAt: new Date().toISOString(),
             createdBy: createdByUserId,
         };
 
-        const updatedList = [...projects, newProject];
-        saveData(STORAGE_KEY, updatedList);
-        return Promise.resolve(newProject);
+        // 3. Gửi lên Server
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newProject)
+        });
+
+        if (!response.ok) throw new Error('Failed to create project');
+        return await response.json();
     },
 
-    update: (id, projectData) => {
-        const projects = getData(STORAGE_KEY, []);
-        const index = projects.findIndex((p) => p.id === id);
+    update: async (id, projectData) => {
+        // 1. Lấy dữ liệu cũ từ server để làm nền
+        const currentProject = await projectService.getById(id);
 
-        if (index === -1) {
-            return Promise.reject(new Error("Project not found"));
-        }
-
-        const currentProject = projects[index];
-
-        // 1. Kiểm tra trùng lặp (CHỈ KHI TÊN THỰC SỰ THAY ĐỔI)
+        // 2. Kiểm tra trùng lặp (Chỉ khi tên thay đổi)
+        // Logic: Nếu có gửi 'name' lên VÀ 'name' đó khác với 'name' hiện tại
         if (
-            projectData.name && // Nếu 'name' được gửi đến
-            projectData.name.toLowerCase() !== currentProject.name.toLowerCase() // VÀ nó khác tên cũ
+            projectData.name &&
+            projectData.name.toLowerCase() !== currentProject.name.toLowerCase()
         ) {
-            // Chỉ lúc này mới chạy kiểm tra
-            const nameExists = projects.some(
-                (p) =>
-                    p.name.toLowerCase() === projectData.name.toLowerCase() &&
-                    p.id !== id
+            const name = projectData.name.trim();
+            const checkRes = await fetch(`${API_URL}?name=${name}`);
+            const checkData = await checkRes.json();
+
+            // Lọc bỏ chính project đang sửa ra khỏi kết quả check
+            const nameExists = checkData.some(
+                (p) => String(p.id) !== String(id) && p.name.toLowerCase() === name.toLowerCase()
             );
+
             if (nameExists) {
-                return Promise.reject(new Error("Tên project đã tồn tại"));
+                throw new Error("Tên project đã tồn tại");
             }
         }
 
-        // 2. Cập nhật dữ liệu (Ghi đè tất cả)
+        // 3. Chuẩn bị dữ liệu cập nhật (Merge)
         const updatedProject = {
-            ...currentProject, // Nền là project cũ
-            ...projectData,     // Ghi đè bằng dữ liệu mới (gồm photoCount, coverPhotoUrl, v.v.)
+            ...currentProject, // Giữ lại data cũ
+            ...projectData,    // Ghi đè data mới (photoCount, coverPhotoUrl, hoặc name/desc)
         };
 
-        // Trim lại các trường text (nếu chúng được gửi đến)
+        // Trim dữ liệu text nếu có
         if (projectData.hasOwnProperty('name')) {
             updatedProject.name = projectData.name.trim();
         }
@@ -94,21 +92,24 @@ export const projectService = {
             updatedProject.description = projectData.description.trim();
         }
 
-        projects[index] = updatedProject;
-        saveData(STORAGE_KEY, projects);
+        // 4. Gửi lệnh PUT lên Server
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedProject)
+        });
 
-        return Promise.resolve(updatedProject);
+        if (!response.ok) throw new Error('Failed to update project');
+        return await response.json();
     },
 
-    delete: (id) => {
-        const projects = getData(STORAGE_KEY, []);
-        const updatedList = projects.filter((p) => p.id !== id);
+    // Xóa project
+    delete: async (id) => {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: 'DELETE'
+        });
 
-        if (projects.length === updatedList.length) {
-            return Promise.reject(new Error("Project not found"));
-        }
-
-        saveData(STORAGE_KEY, updatedList);
-        return Promise.resolve();
+        if (!response.ok) throw new Error('Failed to delete project');
+        return await response.json();
     },
 };

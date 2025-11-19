@@ -5,7 +5,7 @@ import { photoService } from "../services/photoService";
 import { generateClientFileId } from "../utils/imageHelper";
 import { validatePhotoMetadata } from "../utils/Validation";
 export const useImageUploads = (selectedProject, currentUser) => {
-    // files: danh sách các file (đã có preview, progress, status...)
+
     const [files, setFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
 
@@ -42,7 +42,8 @@ export const useImageUploads = (selectedProject, currentUser) => {
             errorMessage: null,
             title: file.name.replace(/\.[^/.]+$/, ""), // Tên file (bỏ đuôi) làm title mặc định
             description: "",
-            tags: "", // Sẽ là chuỗi "tag1, tag2"
+            tags: "",
+            errors: {}
         }));
 
         // Thêm vào danh sách (chỉ thêm file chưa có)
@@ -52,21 +53,20 @@ export const useImageUploads = (selectedProject, currentUser) => {
         ]);
     }, []);
 
-    // --- hàm cập nhật metadata ---
     const updateFileMetadata = (id, field, value) => {
         setFiles(prevFiles =>
             prevFiles.map(f => {
                 if (f.id === id) {
-                    // 1. Tạo state mới
+                    //  Tạo state mới
                     const updatedFile = { ...f, [field]: value };
 
-                    // 2. Chạy validation TRÊN state MỚI
+                    //  Chạy validation TRÊN state MỚI
                     const validationErrors = validatePhotoMetadata(updatedFile);
 
-                    // 3. Trả về state mới + errors
+                    //  Trả về state mới + errors
                     return { ...updatedFile, errors: validationErrors };
                 }
-                return f; // file khác
+                return f;
             })
         );
     };
@@ -92,17 +92,18 @@ export const useImageUploads = (selectedProject, currentUser) => {
             await new Promise(res => setTimeout(res, 500)); // Đợi 0.5s
             updateFileState(id, { progress: 75 });
 
-            // Gọi service (Đây là lúc upload thật)
-            await photoService.create(photoData, file, currentUser.id);
+            // Gọi service để lưu ảnh (Chỉ lưu ảnh, KHÔNG update project ở đây nữa)
+            const savedPhoto = await photoService.create(photoData, file, currentUser.id);
 
             // Hoàn thành
             await new Promise(res => setTimeout(res, 300)); // Đợi 0.3s
             updateFileState(id, { status: "complete", progress: 100 });
             URL.revokeObjectURL(fileObject.preview); // Giải phóng bộ nhớ (xoá URL preview tạm thời)
 
+            return savedPhoto;
         } catch (err) {
             updateFileState(id, { status: "error", errorMessage: err.message });
-            throw err; // Ném lỗi ra ngoài để đếm số file lỗi
+            throw err;
         }
     };
 
@@ -117,21 +118,50 @@ export const useImageUploads = (selectedProject, currentUser) => {
             return;
         }
 
-        // Upload tất cả ảnh đồng thời (parallel)
-        // photoService.create đã xử lý queue nội bộ để tránh race condition
-        const results = await Promise.allSettled(
-            filesToUpload.map(fileObj => processUpload(fileObj))
-        );
+        // Kiểm tra lỗi metadata trước khi upload
+        let hasErrors = false;
+        filesToUpload.forEach(file => {
+            const validationErrors = validatePhotoMetadata(file);
+            if (Object.keys(validationErrors).length > 0) {
+                hasErrors = true;
+                updateFileState(file.id, { errors: validationErrors });
+            }
+        });
 
-        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        if (hasErrors) {
+            toast.error("Một số ảnh đang có lỗi. Vui lòng sửa lại.");
+            setIsUploading(false);
+            return;
+        }
+
+        // Upload tất cả ảnh đồng thời (parallel)
+        // Tạo mảng promise để chạy đồng thời
+        const uploadPromises = filesToUpload.map(fileObj => processUpload(fileObj));
+        const results = await Promise.allSettled(uploadPromises);
+
+        const successItems = results.filter(r => r.status === 'fulfilled');
+        const successCount = successItems.length;
         const failedCount = results.filter(r => r.status === 'rejected').length;
+
+        if (successCount > 0) {
+            // Lấy URL của ảnh thành công cuối cùng để làm ảnh bìa mới
+            const lastPhoto = successItems[successItems.length - 1].value;
+
+            // Gọi hàm cập nhật Project 1 lần duy nhất
+            await photoService.updateProjectAfterUpload(
+                selectedProject.id,
+                successCount,
+                lastPhoto.fileUrl
+            );
+        }
+
         setIsUploading(false);
 
         if (failedCount > 0) {
             if (successCount > 0) {
                 toast.warning(`Upload hoàn tất: ${successCount} thành công, ${failedCount} thất bại.`);
             } else {
-                toast.error(`Tất cả ${failedCount} file đều upload thất bại (có thể do hết dung lượng LocalStorage).`);
+                toast.error(`Tất cả ${failedCount} file đều upload thất bại.`);
             }
         } else {
             toast.success(`Đã upload thành công ${successCount} ảnh!`);

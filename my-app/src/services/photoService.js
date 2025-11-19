@@ -1,147 +1,127 @@
-import photosData from "../mockData/photos.json";
-import { getData, saveData } from "../utils/storage";
-import { projectService } from "./projectService";
 import { convertFileToBase64 } from "../utils/imageHelper";
+import { projectService } from "./projectService";
 
-const PHOTO_STORAGE_KEY = "photos";
-
-// Queue để xử lý upload tuần tự, tránh race condition
-let uploadQueue = Promise.resolve();
-
-const initPhotos = () => {
-    const stored = getData(PHOTO_STORAGE_KEY);
-    if (!stored || stored.length === 0) {
-        saveData(PHOTO_STORAGE_KEY, photosData.photos);
-        return photosData.photos;
-    }
-    return stored;
-};
-
-initPhotos();
+const API_URL = 'http://localhost:3001/photos';
 
 export const photoService = {
-    getAll: () => {
-        const photos = getData(PHOTO_STORAGE_KEY, []);
-        return Promise.resolve(photos);
+    // Lấy tất cả ảnh (cho Admin)
+    getAll: async () => {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error('Failed to fetch photos');
+        return await response.json();
     },
 
-    getPhotosByProjectId: (projectId) => {
-        const photos = getData(PHOTO_STORAGE_KEY, []);
-        const projectPhotos = photos.filter(
-            (p) => p.projectId === projectId
-        );
-        return Promise.resolve(projectPhotos);
+    // Lấy ảnh theo Project (cho User)
+    getPhotosByProjectId: async (projectId) => {
+        const response = await fetch(`${API_URL}?projectId=${projectId}`);
+        if (!response.ok) throw new Error('Failed to fetch project photos');
+        return await response.json();
     },
 
+    // Upload ảnh mới
     create: async (photoData, file, userId) => {
-        // Thêm vào queue để xử lý tuần tự
-        return new Promise((resolve, reject) => {
-            uploadQueue = uploadQueue.then(async () => {
-                try {
-                    if (file.size > 5 * 1024 * 1024) { // 5MB
-                        throw new Error("File quá lớn. Tối đa 5MB.");
-                    }
+        if (file.size > 5 * 1024 * 1024) {
+            throw new Error("File quá lớn. Tối đa 5MB.");
+        }
 
-                    let fileUrl;
-                    try {
-                        fileUrl = await convertFileToBase64(file);
-                    } catch (err) {
-                        throw new Error("Lỗi khi đọc file ảnh.");
-                    }
+        // Chuyển sang Base64
+        let fileUrl;
+        try {
+            fileUrl = await convertFileToBase64(file);
+        } catch (err) {
+            throw new Error("Lỗi khi đọc file ảnh.");
+        }
 
-                    // Đọc lại photos từ storage để đảm bảo có dữ liệu mới nhất
-                    const photos = getData(PHOTO_STORAGE_KEY, []);
-                    const newId = photos.length > 0 ? Math.max(...photos.map((p) => p.id)) + 1 : 1;
+        // Tạo object ảnh
+        const newPhoto = {
+            id: String(Date.now()) + Math.random().toString(36).substr(2, 9), // ID chuỗi duy nhất
+            projectId: photoData.projectId,
+            userId: userId,
+            title: photoData.title || file.name,
+            description: photoData.description || "",
+            tags: photoData.tags || [],
+            fileName: file.name,
+            fileSize: file.size,
+            fileUrl: fileUrl, // Base64 string
+            uploadedAt: new Date().toISOString(),
+        };
 
-                    const newPhoto = {
-                        id: newId,
-                        projectId: photoData.projectId,
-                        userId: userId,
-                        title: photoData.title || file.name,
-                        description: photoData.description || "",
-                        tags: photoData.tags || [],
-                        fileName: file.name,
-                        fileSize: file.size,
-                        fileUrl: fileUrl,
-                        uploadedAt: new Date().toISOString(),
-                    };
-
-                    // Lưu photo ngay lập tức
-                    const updatedList = [...photos, newPhoto];
-                    saveData(PHOTO_STORAGE_KEY, updatedList);
-
-                    // Cập nhật project count
-                    const project = await projectService.getById(photoData.projectId);
-                    if (project) {
-                        // Đọc lại projects từ storage để đảm bảo có dữ liệu mới nhất
-                        const projects = getData("projects", []);
-                        const currentProject = projects.find(p => p.id === photoData.projectId);
-
-                        if (currentProject) {
-                            const updatedProject = {
-                                ...currentProject,
-                                photoCount: currentProject.photoCount + 1,
-                                coverPhotoUrl: currentProject.coverPhotoUrl || newPhoto.fileUrl
-                            };
-
-                            await projectService.update(project.id, updatedProject);
-                        }
-                    }
-
-                    resolve(newPhoto);
-                } catch (error) {
-                    reject(error);
-                }
-            }).catch(reject);
+        // Gửi lên Server (Lưu ảnh)
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newPhoto)
         });
+
+        if (!response.ok) throw new Error('Failed to save photo');
+        return await response.json();
     },
 
+    updateProjectAfterUpload: async (projectId, successCount, lastPhotoUrl) => {
+        if (successCount === 0) return;
+
+        try {
+            const project = await projectService.getById(projectId);
+            if (project) {
+                await projectService.update(projectId, {
+                    photoCount: (project.photoCount || 0) + successCount,
+                    coverPhotoUrl: lastPhotoUrl || project.coverPhotoUrl
+                });
+            }
+        } catch (err) {
+            console.error("Lỗi cập nhật project count:", err);
+        }
+    },
+
+    // Xóa ảnh
     delete: async (photoId, userId, userRole) => {
-        const photos = getData(PHOTO_STORAGE_KEY, []);
+        // 1. Lấy thông tin ảnh để kiểm tra quyền
+        const res = await fetch(`${API_URL}/${photoId}`);
+        if (!res.ok) throw new Error("Không tìm thấy ảnh.");
+        const photo = await res.json();
 
-        const photoIndex = photos.findIndex(p => p.id === photoId);
-        if (photoIndex === -1) {
-            return Promise.reject(new Error("Không tìm thấy ảnh."));
+        // 2. Kiểm tra quyền (Admin hoặc Chủ sở hữu)
+        // userId từ json-server có thể là số hoặc chuỗi, nên convert sang String để so sánh
+        if (String(photo.userId) !== String(userId) && userRole !== 'admin') {
+            throw new Error("Bạn không có quyền xóa ảnh này.");
         }
 
-        const photo = photos[photoIndex];
+        // 3. Xóa ảnh trên server
+        const deleteRes = await fetch(`${API_URL}/${photoId}`, {
+            method: 'DELETE'
+        });
+        if (!deleteRes.ok) throw new Error("Lỗi khi xóa ảnh.");
 
-        // Chỉ cho phép xóa nếu là admin hoặc là người upload ảnh
-        if (photo.userId !== userId && userRole !== "admin") {
-            return Promise.reject(new Error("Bạn không có quyền xóa ảnh này."));
-        }
-
-        const updatedList = photos.filter((p) => p.id !== photoId);
-        saveData(PHOTO_STORAGE_KEY, updatedList);
-
+        // 4. Cập nhật Project (Giảm photoCount)
         try {
             const project = await projectService.getById(photo.projectId);
             if (project) {
-                const updatedProject = { ...project, photoCount: Math.max(0, project.photoCount - 1) };
+                const newCount = Math.max(0, (project.photoCount || 0) - 1);
+                const updateData = { photoCount: newCount };
 
-                // Nếu ảnh bị xóa là ảnh bìa, ta cần xóa ảnh bìa
+                // Nếu ảnh bị xóa là ảnh bìa, set cover về null 
                 if (project.coverPhotoUrl === photo.fileUrl) {
-                    updatedProject.coverPhotoUrl = null; // Hoặc tìm 1 ảnh khác làm bìa
+                    updateData.coverPhotoUrl = null;
                 }
 
-                await projectService.update(project.id, updatedProject);
+                await projectService.update(project.id, updateData);
             }
         } catch (err) {
-            console.error("Lỗi khi cập nhật photoCount (delete):", err);
+            console.error("Lỗi khi cập nhật project count (delete):", err);
         }
 
-        return Promise.resolve();
+        return true;
     },
 
-    deletePhotosByProjectId: (projectId) => {
-        const photos = getData(PHOTO_STORAGE_KEY, []);
+    // Xóa tất cả ảnh của 1 project (Dùng khi xóa Project)
+    deletePhotosByProjectId: async (projectId) => {
+        const photos = await photoService.getPhotosByProjectId(projectId);
 
-        // Lọc và giữ lại tất cả ảnh không thuộc project này
-        const updatedList = photos.filter(
-            (p) => p.projectId !== projectId
+        const deletePromises = photos.map(photo =>
+            fetch(`${API_URL}/${photo.id}`, { method: 'DELETE' })
         );
 
-        saveData(PHOTO_STORAGE_KEY, updatedList);
-        return Promise.resolve();
+        await Promise.all(deletePromises);
+        return true;
     }
 };

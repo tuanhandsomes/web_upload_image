@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocalStorage } from "../../hooks/useLocalStorage";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
     faSearch,
@@ -15,6 +14,7 @@ import { toast } from "react-toastify";
 import { projectService } from "../../services/projectService";
 import { photoService } from "../../services/photoService";
 import { useAuth } from "../../contexts/AuthContext";
+import { useLocalStorage } from "../../hooks/useLocalStorage";
 
 import ProjectForm from "../../components/common/ProjectForm";
 import EditProjectForm from "../../components/common/EditProjectForm";
@@ -50,14 +50,14 @@ function ProjectCard({ project, onEdit, onDelete }) {
                     <div className="relative">
                         <button
                             onClick={() => setMenuOpen(!menuOpen)}
-                            onBlur={() => setTimeout(() => setMenuOpen(false), 150)}
+                            onBlur={() => setTimeout(() => setMenuOpen(false), 200)} // Delay để kịp click menu
                             className="text-gray-500 hover:text-gray-800 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer"
                         >
                             <FontAwesomeIcon icon={faEllipsisV} />
                         </button>
                         {/* Dropdown Menu */}
                         {menuOpen && (
-                            <div className="absolute right-0 top-10 w-36 bg-white rounded-lg shadow-xl py-2 z-10 border">
+                            <div className="absolute right-0 top-10 w-36 bg-white rounded-lg shadow-xl py-2 z-10 border border-gray-300">
                                 <button
                                     onClick={onEdit}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2 cursor-pointer"
@@ -106,14 +106,15 @@ function ProjectManagement() {
     const [loading, setLoading] = useState(true);
 
     // States cho Filter và Search
-    const [search, setSearch] = useLocalStorage("project_search", ""); // 
-    const [statusFilter, setStatusFilter] = useLocalStorage("project_status_filter", "all"); // 
+    const [search, setSearch] = useLocalStorage("project_search", "");
+    const [statusFilter, setStatusFilter] = useLocalStorage("project_status_filter", "all");
     const [sortOrder, setSortOrder] = useLocalStorage("project_sort_order", "newest"); // 'newest', 'oldest', 'name'
 
     // States cho Modal
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
 
+    // 1. Hàm tải danh sách project từ server
     const fetchProjects = async () => {
         setLoading(true);
         try {

@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { accountService } from "../services/accountService";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShieldAlt, faUser } from "@fortawesome/free-solid-svg-icons";
 import validateCredentials from "../utils/Validation";
@@ -10,12 +9,9 @@ import bcrypt from 'bcryptjs';
 function AdminLogin() {
     const [credentials, setCredentials] = useState({ username: "", password: "" });
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
-
-    useEffect(() => {
-        accountService.getAll();
-    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -26,30 +22,47 @@ function AdminLogin() {
             setError(validationError);
             return;
         }
+        setLoading(true);
 
         try {
-            const accounts = await accountService.getAll();
+            // Tìm Admin trên server (Query theo username trước)
+            let response = await fetch(`http://localhost:3001/accounts?username=${credentials.username}`);
+            let accounts = await response.json();
 
-            const admin = accounts.find(
-                (a) =>
-                    (a.username.toLowerCase() === credentials.username.toLowerCase() ||
-                        a.email.toLowerCase() === credentials.username.toLowerCase()) &&
-                    bcrypt.compareSync(credentials.password, a.password) &&
-                    a.role.toLowerCase() === "admin" &&
-                    a.status.toLowerCase() === "active"
+            // Nếu không tìm thấy bằng username, thử tìm bằng email
+            if (accounts.length === 0) {
+                response = await fetch(`http://localhost:3001/accounts?email=${credentials.username}`);
+                accounts = await response.json();
+            }
+
+            // Lọc ra tài khoản có role='admin' và status='active'
+            const adminUser = accounts.find(a =>
+                a.role === "admin" && a.status === "active"
             );
 
-            if (admin) {
-                const normalizedAdmin = { ...admin, role: "admin" };
-                login(normalizedAdmin);
+            if (adminUser) {
+                // So sánh mật khẩu
+                // Ưu tiên so sánh hash (bcrypt), nếu fail thì thử so sánh text thường (cho dữ liệu cũ)
+                const isMatch = bcrypt.compareSync(credentials.password, adminUser.password) ||
+                    credentials.password === adminUser.password;
 
-                navigate("/admin/dashboard", { replace: true });
+                if (isMatch) {
+                    // Loại bỏ password
+                    const { password, ...adminWithoutPassword } = adminUser;
+
+                    login(adminWithoutPassword);
+                    navigate("/admin/dashboard", { replace: true });
+                } else {
+                    setError("Tên đăng nhập hoặc mật khẩu không đúng!");
+                }
             } else {
                 setError("Tên đăng nhập hoặc mật khẩu không đúng!");
             }
         } catch (err) {
             console.error("Admin login error:", err);
-            setError("Đã xảy ra lỗi khi đăng nhập.");
+            setError("Đã xảy ra lỗi kết nối server.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -58,7 +71,7 @@ function AdminLogin() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-500 to-pink-500">
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-500 to-pink-500 animate-fadeIn">
             <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
                 <div className="flex flex-col items-center mb-6">
                     <div className="p-4">
@@ -93,6 +106,7 @@ function AdminLogin() {
                                 setCredentials({ ...credentials, username: e.target.value })
                             }
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            disabled={loading}
                         />
                     </div>
 
@@ -108,6 +122,7 @@ function AdminLogin() {
                                 setCredentials({ ...credentials, password: e.target.value })
                             }
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            disabled={loading}
                         />
                     </div>
 
@@ -122,9 +137,10 @@ function AdminLogin() {
 
                     <button
                         type="submit"
-                        className="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition shadow-md cursor-pointer flex items-center justify-center gap-2"
+                        disabled={loading}
+                        className="w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition shadow-md cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Sign In
+                        {loading ? "Verifying..." : "Sign In"}
                     </button>
 
                     <div className="flex items-center my-4">
@@ -136,6 +152,7 @@ function AdminLogin() {
                     <button
                         type="button"
                         onClick={handleUserLogin}
+                        disabled={loading}
                         className="w-full py-2 border border-purple-400 text-purple-500 rounded-lg hover:bg-purple-50 transition cursor-pointer flex items-center justify-center gap-2"
                     >
                         <FontAwesomeIcon icon={faUser} className="text-purple-500 text-lg" />
