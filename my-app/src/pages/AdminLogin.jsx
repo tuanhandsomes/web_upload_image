@@ -26,12 +26,12 @@ function AdminLogin() {
 
         try {
             // Tìm Admin trên server (Query theo username trước)
-            let response = await fetch(`http://localhost:3001/accounts?username=${credentials.username}`);
+            let response = await fetch(`https://my-app-backend-efhe.onrender.com/accounts?username=${credentials.username}`);
             let accounts = await response.json();
 
             // Nếu không tìm thấy bằng username, thử tìm bằng email
             if (accounts.length === 0) {
-                response = await fetch(`http://localhost:3001/accounts?email=${credentials.username}`);
+                response = await fetch(`https://my-app-backend-efhe.onrender.com/accounts?email=${credentials.username}`);
                 accounts = await response.json();
             }
 

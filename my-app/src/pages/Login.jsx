@@ -30,12 +30,12 @@ function Login() {
         try {
 
             // Fetch user có username trùng
-            let response = await fetch(`http://localhost:3001/accounts?username=${credentials.username}`);
+            let response = await fetch(`https://my-app-backend-efhe.onrender.com/accounts?username=${credentials.username}`);
             let users = await response.json();
 
             // Nếu không tìm thấy bằng username, thử tìm bằng email
             if (users.length === 0) {
-                response = await fetch(`http://localhost:3001/accounts?email=${credentials.username}`);
+                response = await fetch(`https://my-app-backend-efhe.onrender.com/accounts?email=${credentials.username}`);
                 users = await response.json();
             }
 
