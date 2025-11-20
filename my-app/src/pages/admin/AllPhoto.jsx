@@ -93,7 +93,7 @@ function ImageCard({ photo, onOpen, onDelete, canDelete }) {
               - Trên 'xl:' (Desktop): 'xl:hidden' (Ẩn đi)
             */}
             <div className="absolute bottom-0 left-0 p-3 bg-gradient-to-t from-black/70 to-transparent w-full 
-                        xl:hidden">
+                        lg:hidden">
                 <h3 className="text-white font-medium text-base truncate" title={photo.title}>
                     {photo.title}
                 </h3>
@@ -111,7 +111,7 @@ function ImageCard({ photo, onOpen, onDelete, canDelete }) {
               - Trên 'xl:' (Desktop): 'xl:hidden' (Ẩn đi)
             */}
             <div className="absolute top-3 right-3 flex flex-row gap-2 
-                        xl:hidden">
+                        lg:hidden">
                 <button
                     onClick={onOpen}
                     title="View Fullsize"

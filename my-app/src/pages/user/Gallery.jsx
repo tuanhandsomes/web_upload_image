@@ -94,7 +94,7 @@ function ImageCard({ photo, onOpen, onDelete, canDelete }) {
               - Trên 'xl:' (Desktop): 'xl:hidden' (Ẩn đi)
             */}
             <div className="absolute bottom-0 left-0 p-3 bg-gradient-to-t from-black/70 to-transparent w-full 
-                        xl:hidden">
+                        lg:hidden">
                 <h3 className="text-white font-medium text-base truncate" title={photo.title}>
                     {photo.title}
                 </h3>
@@ -107,28 +107,38 @@ function ImageCard({ photo, onOpen, onDelete, canDelete }) {
                 </p>
             </div>
 
-            {/* --- lớp phủ nút bấm (chỉ dành cho di động/tablet) --- */}
-            {/* - Mặc định: 'flex' (Hiện)
-              - Trên 'xl:' (Desktop): 'xl:hidden' (Ẩn đi)
-            */}
-            <div className="absolute top-3 right-3 flex flex-row gap-2 
-                        xl:hidden">
-                <button
-                    onClick={onOpen}
-                    title="View Fullsize"
-                    className="w-9 h-9 bg-white/70 text-black rounded-full shadow-md"
-                >
-                    <FontAwesomeIcon icon={faExpand} />
-                </button>
-                {canDelete && (
+            <div className="lg:hidden">
+
+                {/* Thông tin Mobile (Góc dưới) */}
+                <div className="absolute bottom-0 left-0 p-3 bg-gradient-to-t from-black/70 to-transparent w-full">
+                    <h3 className="text-white font-semibold text-base truncate" title={photo.title}>
+                        {photo.title}
+                    </h3>
+                    <p className="text-white text-sm opacity-90 truncate" title={photo.description}>
+                        {photo.description || ""}
+                    </p>
+                    <p className="text-white text-xs opacity-70 mt-1">
+                        {timeAgo(photo.uploadedAt)}
+                    </p>
+                </div>
+
+                {/* Nút bấm Mobile (Góc trên) */}
+                <div className="absolute top-3 right-3 flex flex-row gap-2">
                     <button
-                        onClick={onDelete}
-                        title="Delete Photo"
-                        className="w-9 h-9 bg-red-600 text-white rounded-full shadow-md"
+                        onClick={onOpen}
+                        className="w-9 h-9 bg-white/70 text-black rounded-full shadow-md flex items-center justify-center"
                     >
-                        <FontAwesomeIcon icon={faTrash} />
+                        <FontAwesomeIcon icon={faExpand} />
                     </button>
-                )}
+                    {canDelete && (
+                        <button
+                            onClick={onDelete}
+                            className="w-9 h-9 bg-red-600 text-white rounded-full shadow-md flex items-center justify-center"
+                        >
+                            <FontAwesomeIcon icon={faTrash} />
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );
