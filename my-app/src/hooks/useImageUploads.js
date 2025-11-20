@@ -144,15 +144,7 @@ export const useImageUploads = (selectedProject, currentUser) => {
         const failedCount = results.filter(r => r.status === 'rejected').length;
 
         if (successCount > 0) {
-            // Lấy URL của ảnh thành công cuối cùng để làm ảnh bìa mới
-            const lastPhoto = successItems[successItems.length - 1].value;
-
-            // Gọi hàm cập nhật Project 1 lần duy nhất
-            await photoService.updateProjectAfterUpload(
-                selectedProject.id,
-                successCount,
-                lastPhoto.fileUrl
-            );
+            await photoService.updateProjectAfterUpload(selectedProject.id)
         }
 
         setIsUploading(false);

@@ -57,19 +57,26 @@ export const photoService = {
         return await response.json();
     },
 
-    updateProjectAfterUpload: async (projectId, successCount, lastPhotoUrl) => {
-        if (successCount === 0) return;
+    updateProjectAfterUpload: async (projectId) => {
 
         try {
-            const project = await projectService.getById(projectId);
-            if (project) {
-                await projectService.update(projectId, {
-                    photoCount: (project.photoCount || 0) + successCount,
-                    coverPhotoUrl: lastPhotoUrl || project.coverPhotoUrl
-                });
-            }
+            // 1. Lấy danh sách ảnh thực tế của project từ server
+            const photos = await photoService.getPhotosByProjectId(projectId);
+
+            // 2. Tính toán số lượng thật
+            const realCount = photos.length;
+
+            // 3. Lấy ảnh mới nhất làm ảnh bìa (ảnh cuối cùng trong mảng)
+            const latestPhoto = photos.length > 0 ? photos[photos.length - 1] : null;
+            const newCoverUrl = latestPhoto ? latestPhoto.fileUrl : null;
+
+            // 4. Cập nhật Project với số liệu chính xác
+            await projectService.update(projectId, {
+                photoCount: realCount,
+                coverPhotoUrl: newCoverUrl
+            });
         } catch (err) {
-            console.error("Lỗi cập nhật project count:", err);
+            console.error("Lỗi khi đồng bộ project:", err);
         }
     },
 
@@ -92,23 +99,9 @@ export const photoService = {
         });
         if (!deleteRes.ok) throw new Error("Lỗi khi xóa ảnh.");
 
-        // 4. Cập nhật Project (Giảm photoCount)
-        try {
-            const project = await projectService.getById(photo.projectId);
-            if (project) {
-                const newCount = Math.max(0, (project.photoCount || 0) - 1);
-                const updateData = { photoCount: newCount };
-
-                // Nếu ảnh bị xóa là ảnh bìa, set cover về null 
-                if (project.coverPhotoUrl === photo.fileUrl) {
-                    updateData.coverPhotoUrl = null;
-                }
-
-                await projectService.update(project.id, updateData);
-            }
-        } catch (err) {
-            console.error("Lỗi khi cập nhật project count (delete):", err);
-        }
+        // Thay vì trừ 1 thủ công, ta gọi hàm này để nó tự đếm lại số lượng ảnh còn lại
+        // và tự động chọn ảnh mới nhất làm ảnh bìa (nếu ảnh bìa vừa bị xóa).
+        await photoService.updateProjectAfterUpload(photo.projectId);
 
         return true;
     },
