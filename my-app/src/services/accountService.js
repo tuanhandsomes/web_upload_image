@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 
-const API_URL = 'http://localhost:3001/accounts';
+const API_URL = 'https://my-app-backend-efhe.onrender.com/accounts';
 const SALT_ROUNDS = 10;
 
 export const accountService = {

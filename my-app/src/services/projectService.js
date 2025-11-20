@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3001/projects';
+const API_URL = 'https://my-app-backend-efhe.onrender.com/projects';
 
 export const projectService = {
     // Lấy tất cả project

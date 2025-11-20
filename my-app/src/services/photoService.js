@@ -1,7 +1,7 @@
 import { convertFileToBase64 } from "../utils/imageHelper";
 import { projectService } from "./projectService";
 
-const API_URL = 'http://localhost:3001/photos';
+const API_URL = 'https://my-app-backend-efhe.onrender.com/photos';
 
 export const photoService = {
     // Lấy tất cả ảnh (cho Admin)
