@@ -143,7 +143,7 @@ function AllPhoto() {
     const [loading, setLoading] = useState(true);
 
     const [selectedProjectId, setSelectedProjectId] = useState("all");
-    const [selectedTag, setSelectedTag] = useState("all");
+    const [selectedTags, setSelectedTags] = useState([]);
     const [sortOrder, setSortOrder] = useState("newest");
 
     const [open, setOpen] = useState(false);
@@ -182,30 +182,51 @@ function AllPhoto() {
         loadData();
     }, []); // Chỉ chạy 1 lần
 
+    const toggleTag = (tag) => {
+        if (tag === 'all') {
+            setSelectedTags([]); // Xóa hết = Chọn All
+            return;
+        }
+
+        setSelectedTags(prev => {
+            if (prev.includes(tag)) {
+                // Nếu đã có -> Xóa đi (Uncheck)
+                return prev.filter(t => t !== tag);
+            } else {
+                // Nếu chưa có -> Thêm vào (Check)
+                return [...prev, tag];
+            }
+        });
+    };
+
     // --- logic lọc và sắp xếp ---
     const filteredPhotos = useMemo(() => {
         let photos = [...allPhotos];
 
-        // lọc theo project
+        // Lọc theo Project
         if (selectedProjectId !== "all") {
             // So sánh chuỗi ID (vì json-server dùng string ID)
             photos = photos.filter(p => String(p.projectId) === String(selectedProjectId));
         }
 
-        // lọc theo tag
-        if (selectedTag !== "all") {
-            photos = photos.filter(p => p.tags.includes(selectedTag));
+        // Lọc theo Tag
+        if (selectedTags.length > 0) {
+            // Giữ lại ảnh nào có CHỨA ít nhất 1 tag trong danh sách đã chọn
+            photos = photos.filter(p =>
+                p.tags.some(photoTag => selectedTags.includes(photoTag))
+            );
         }
 
+        // Sắp xếp theo Ngày
         photos.sort((a, b) => {
             if (sortOrder === 'oldest') {
-                return new Date(a.uploadedAt) - new Date(b.uploadedAt);
+                return new Date(a.uploadedAt) - new Date(b.uploadedAt); // Cũ nhất
             }
-            return new Date(b.uploadedAt) - new Date(a.uploadedAt);
+            return new Date(b.uploadedAt) - new Date(a.uploadedAt); // Mới nhất (mặc định)
         });
 
         return photos;
-    }, [allPhotos, selectedProjectId, selectedTag, sortOrder]);
+    }, [allPhotos, selectedProjectId, selectedTags, sortOrder]);
 
     // --- hàm xử lý khi open lightbox ---
     const openLightbox = (photoIndex) => {
@@ -299,9 +320,9 @@ function AllPhoto() {
                     {/* giao diện tags  */}
                     <div className="flex flex-wrap gap-2">
                         <button
-                            onClick={() => setSelectedTag("all")}
+                            onClick={() => toggleTag("all")}
                             className={`px-3 py-1 text-xs font-medium rounded-full border transition-all
-                            ${selectedTag === 'all'
+                            ${selectedTags.length === 0
                                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                     : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-500'
                                 }`}
@@ -312,9 +333,9 @@ function AllPhoto() {
                         {allTags.map(tag => (
                             <button
                                 key={tag}
-                                onClick={() => setSelectedTag(tag)}
+                                onClick={() => toggleTag(tag)}
                                 className={`px-3 py-1 text-xs font-medium rounded-full border transition-all capitalize
-                                ${selectedTag === tag
+                                ${selectedTags.includes(tag)
                                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                         : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-500'
                                     }`}

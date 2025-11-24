@@ -156,7 +156,7 @@ function Gallery() {
 
     // Filter State
     const [selectedProjectId, setSelectedProjectId] = useState("all"); // 'all' hoặc ID
-    const [selectedTag, setSelectedTag] = useState("all"); // 'all' hoặc 'tagname'
+    const [selectedTags, setSelectedTags] = useState([]); // Mảng tags đã chọn
     const [sortOrder, setSortOrder] = useState("newest"); // 'newest' hoặc 'oldest'
 
     // Lightbox State
@@ -198,6 +198,22 @@ function Gallery() {
         loadData();
     }, []); // chỉ chạy 1 lần khi mount
 
+    const toggleTag = (tag) => {
+        if (tag === 'all') {
+            setSelectedTags([]); // Xóa hết = Chọn All
+            return;
+        }
+
+        setSelectedTags(prev => {
+            if (prev.includes(tag)) {
+                // Nếu đã có -> Xóa đi (Uncheck)
+                return prev.filter(t => t !== tag);
+            } else {
+                // Nếu chưa có -> Thêm vào (Check)
+                return [...prev, tag];
+            }
+        });
+    };
     // --- logic lọc và sắp xếp ---
     const filteredPhotos = useMemo(() => {
         let photos = [...allPhotos];
@@ -209,8 +225,11 @@ function Gallery() {
         }
 
         // Lọc theo Tag
-        if (selectedTag !== "all") {
-            photos = photos.filter(p => p.tags.includes(selectedTag));
+        if (selectedTags.length > 0) {
+            // Giữ lại ảnh nào có CHỨA ít nhất 1 tag trong danh sách đã chọn
+            photos = photos.filter(p =>
+                p.tags.some(photoTag => selectedTags.includes(photoTag))
+            );
         }
 
         // Sắp xếp theo Ngày
@@ -222,7 +241,7 @@ function Gallery() {
         });
 
         return photos;
-    }, [allPhotos, selectedProjectId, selectedTag, sortOrder]);
+    }, [allPhotos, selectedProjectId, selectedTags, sortOrder]);
 
     // Mở Lightbox tại ảnh được chọn
     const openLightbox = (photoIndex) => {
@@ -321,9 +340,9 @@ function Gallery() {
                     <div className="flex flex-wrap gap-2">
                         {/* Nút All Tags */}
                         <button
-                            onClick={() => setSelectedTag("all")}
+                            onClick={() => toggleTag('all')}
                             className={`px-3 py-1 text-xs font-medium rounded-full border transition-all
-                            ${selectedTag === 'all'
+                            ${selectedTags.length === 0 // Nếu mảng rỗng thì là đang chọn All
                                     ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                     : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-500'
                                 }`}
@@ -335,9 +354,9 @@ function Gallery() {
                         {allTags.map(tag => (
                             <button
                                 key={tag}
-                                onClick={() => setSelectedTag(tag)}
+                                onClick={() => toggleTag(tag)}
                                 className={`px-3 py-1 text-xs font-medium rounded-full border transition-all capitalize
-                                ${selectedTag === tag
+                                ${selectedTags.includes(tag) // Kiểm tra xem tag có trong mảng không
                                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                         : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-500'
                                     }`}
