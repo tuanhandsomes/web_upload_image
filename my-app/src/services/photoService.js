@@ -1,21 +1,16 @@
+import { api } from "../utils/request";
 import { convertFileToBase64 } from "../utils/imageHelper";
 import { projectService } from "./projectService";
-
-const API_URL = 'https://my-app-backend-efhe.onrender.com/photos';
 
 export const photoService = {
     // Lấy tất cả ảnh (cho Admin)
     getAll: async () => {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Failed to fetch photos');
-        return await response.json();
+        return await api.get('/photos');
     },
 
     // Lấy ảnh theo Project (cho User)
     getPhotosByProjectId: async (projectId) => {
-        const response = await fetch(`${API_URL}?projectId=${projectId}`);
-        if (!response.ok) throw new Error('Failed to fetch project photos');
-        return await response.json();
+        return await api.get(`/photos?projectId=${projectId}`);
     },
 
     // Upload ảnh mới
@@ -46,15 +41,7 @@ export const photoService = {
             uploadedAt: new Date().toISOString(),
         };
 
-        // Gửi lên Server (Lưu ảnh)
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newPhoto)
-        });
-
-        if (!response.ok) throw new Error('Failed to save photo');
-        return await response.json();
+        return await api.post('/photos', newPhoto);
     },
 
     updateProjectAfterUpload: async (projectId) => {
@@ -83,24 +70,17 @@ export const photoService = {
     // Xóa ảnh
     delete: async (photoId, userId, userRole) => {
         // 1. Lấy thông tin ảnh để kiểm tra quyền
-        const res = await fetch(`${API_URL}/${photoId}`);
-        if (!res.ok) throw new Error("Không tìm thấy ảnh.");
-        const photo = await res.json();
+        const photo = await api.get(`/photos/${photoId}`);
 
-        // 2. Kiểm tra quyền (Admin hoặc Chủ sở hữu)
-        // userId từ json-server có thể là số hoặc chuỗi, nên convert sang String để so sánh
+        // 2. Kiểm tra quyền
         if (String(photo.userId) !== String(userId) && userRole !== 'admin') {
             throw new Error("Bạn không có quyền xóa ảnh này.");
         }
 
-        // 3. Xóa ảnh trên server
-        const deleteRes = await fetch(`${API_URL}/${photoId}`, {
-            method: 'DELETE'
-        });
-        if (!deleteRes.ok) throw new Error("Lỗi khi xóa ảnh.");
+        // 3. Gọi DELETE /photos/:id
+        await api.delete(`/photos/${photoId}`);
 
-        // Thay vì trừ 1 thủ công, ta gọi hàm này để nó tự đếm lại số lượng ảnh còn lại
-        // và tự động chọn ảnh mới nhất làm ảnh bìa (nếu ảnh bìa vừa bị xóa).
+        // 4. Cập nhật lại Project (Đếm lại từ đầu)
         await photoService.updateProjectAfterUpload(photo.projectId);
 
         return true;
@@ -111,7 +91,7 @@ export const photoService = {
         const photos = await photoService.getPhotosByProjectId(projectId);
 
         const deletePromises = photos.map(photo =>
-            fetch(`${API_URL}/${photo.id}`, { method: 'DELETE' })
+            api.delete(`/photos/${photo.id}`)
         );
 
         await Promise.all(deletePromises);

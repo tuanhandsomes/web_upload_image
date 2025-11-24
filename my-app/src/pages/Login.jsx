@@ -59,7 +59,7 @@ function Login() {
                     login(userWithoutPassword); // Chỉ lưu ID, email, role, status...
                     navigate("/project-selection");
                 } else {
-                    setError("Mật khẩu không đúng!");
+                    setError("Tài khoản hoặc mật khẩu không đúng!");
                 }
             } else {
                 setError("Tài khoản không tồn tại hoặc chưa kích hoạt!");

@@ -1,26 +1,25 @@
-const API_URL = 'https://my-app-backend-efhe.onrender.com/projects';
+import { api } from "../utils/request";
 
 export const projectService = {
     // Lấy tất cả project
     getAll: async () => {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error('Failed to fetch projects');
-        return await response.json();
+        return await api.get('/projects');
     },
 
     // Lấy project theo ID
     getById: async (id) => {
-        const response = await fetch(`${API_URL}/${id}`);
-        if (!response.ok) throw new Error('Project not found');
-        return await response.json();
+        try {
+            return await api.get(`/projects/${id}`);
+        } catch (error) {
+            throw new Error('Project not found');
+        }
     },
 
     // Tạo project mới
     create: async (projectData, createdByUserId) => {
         // 1. Kiểm tra trùng tên (Case-insensitive)
         const name = projectData.name.trim();
-        const checkRes = await fetch(`${API_URL}?name=${name}`);
-        const checkData = await checkRes.json();
+        const checkData = await api.get(`/projects?name=${name}`);
 
         // Kiểm tra kỹ hơn về chữ hoa/thường
         const nameExists = checkData.some(
@@ -43,32 +42,19 @@ export const projectService = {
             createdBy: createdByUserId,
         };
 
-        // 3. Gửi lên Server
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newProject)
-        });
-
-        if (!response.ok) throw new Error('Failed to create project');
-        return await response.json();
+        return await api.post('/projects', newProject);
     },
 
+    // Cập nhật project
     update: async (id, projectData) => {
-        // 1. Lấy dữ liệu cũ từ server để làm nền
+        // 1. Lấy dữ liệu cũ
         const currentProject = await projectService.getById(id);
 
-        // 2. Kiểm tra trùng lặp (Chỉ khi tên thay đổi)
-        // Logic: Nếu có gửi 'name' lên VÀ 'name' đó khác với 'name' hiện tại
-        if (
-            projectData.name &&
-            projectData.name.toLowerCase() !== currentProject.name.toLowerCase()
-        ) {
+        // 2. Kiểm tra trùng lặp (nếu đổi tên)
+        if (projectData.name && projectData.name.toLowerCase() !== currentProject.name.toLowerCase()) {
             const name = projectData.name.trim();
-            const checkRes = await fetch(`${API_URL}?name=${name}`);
-            const checkData = await checkRes.json();
+            const checkData = await api.get(`/projects?name=${name}`);
 
-            // Lọc bỏ chính project đang sửa ra khỏi kết quả check
             const nameExists = checkData.some(
                 (p) => String(p.id) !== String(id) && p.name.toLowerCase() === name.toLowerCase()
             );
@@ -78,38 +64,21 @@ export const projectService = {
             }
         }
 
-        // 3. Chuẩn bị dữ liệu cập nhật (Merge)
+        // 3. Merge dữ liệu
         const updatedProject = {
-            ...currentProject, // Giữ lại data cũ
-            ...projectData,    // Ghi đè data mới (photoCount, coverPhotoUrl, hoặc name/desc)
+            ...currentProject,
+            ...projectData,
         };
 
-        // Trim dữ liệu text nếu có
-        if (projectData.hasOwnProperty('name')) {
-            updatedProject.name = projectData.name.trim();
-        }
-        if (projectData.hasOwnProperty('description')) {
-            updatedProject.description = projectData.description.trim();
-        }
+        if (projectData.hasOwnProperty('name')) updatedProject.name = projectData.name.trim();
+        if (projectData.hasOwnProperty('description')) updatedProject.description = projectData.description.trim();
 
-        // 4. Gửi lệnh PUT lên Server
-        const response = await fetch(`${API_URL}/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedProject)
-        });
-
-        if (!response.ok) throw new Error('Failed to update project');
-        return await response.json();
+        // 4. Gọi PUT /projects/:id
+        return await api.put(`/projects/${id}`, updatedProject);
     },
 
     // Xóa project
     delete: async (id) => {
-        const response = await fetch(`${API_URL}/${id}`, {
-            method: 'DELETE'
-        });
-
-        if (!response.ok) throw new Error('Failed to delete project');
-        return await response.json();
+        return await api.delete(`/projects/${id}`);
     },
 };

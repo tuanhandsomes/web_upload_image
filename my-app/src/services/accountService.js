@@ -1,32 +1,28 @@
+// src/services/accountService.js
+import { api } from "../utils/request";
 import bcrypt from "bcryptjs";
 
-const API_URL = 'https://my-app-backend-efhe.onrender.com/accounts';
 const SALT_ROUNDS = 10;
 
 export const accountService = {
     // Lấy tất cả tài khoản
     getAll: async () => {
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-            throw new Error('Failed to fetch accounts');
-        }
-        return await response.json();
+        return await api.get('/accounts');
     },
 
     // Lấy tài khoản theo ID
     getById: async (id) => {
-        const response = await fetch(`${API_URL}/${id}`);
-        if (!response.ok) {
+        try {
+            return await api.get(`/accounts/${id}`);
+        } catch (error) {
             throw new Error('Account not found');
         }
-        return await response.json();
     },
 
+    // Tạo tài khoản mới
     create: async (accountData) => {
-
-        // 1. Kiểm tra trùng lặp (Query server)
-        const allRes = await fetch(API_URL);
-        const allAccounts = await allRes.json();
+        // 1. Kiểm tra trùng lặp (Lấy tất cả về check)
+        const allAccounts = await api.get('/accounts');
 
         if (allAccounts.some(a => a.username.toLowerCase() === accountData.username.toLowerCase())) {
             throw new Error("Username đã tồn tại");
@@ -38,9 +34,9 @@ export const accountService = {
         // 2. Mã hóa mật khẩu
         const hashedPassword = bcrypt.hashSync(accountData.password, SALT_ROUNDS);
 
-        // 3. Tạo object account mới (chuẩn hóa dữ liệu)
+        // 3. Tạo object account mới
         const newAccount = {
-            id: String(Date.now()), // Giả định ID là timestamp
+            id: String(Date.now()), // ID dạng chuỗi
             username: accountData.username.trim(),
             email: accountData.email.trim(),
             password: hashedPassword,
@@ -49,98 +45,65 @@ export const accountService = {
             createdAt: new Date().toISOString(),
         };
 
-        // 4. Gửi lên server
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newAccount)
-        });
-        // Kiểm tra phản hồi
-        if (!response.ok) {
-            throw new Error('Failed to create account');
-        }
-        return await response.json();
+        // 4. Gọi POST /accounts
+        return await api.post('/accounts', newAccount);
     },
 
+    // Cập nhật tài khoản
     update: async (id, accountData) => {
-        // 1. Lấy thông tin account hiện tại từ Server
-        const currentRes = await fetch(`${API_URL}/${id}`);
-        if (!currentRes.ok) {
-            throw new Error('Account not found');
-        }
-        const currentAccount = await currentRes.json();
+        // 1. Lấy thông tin cũ
+        const currentAccount = await accountService.getById(id);
 
-        // 2. Logic bảo vệ: Không cho phép vô hiệu hóa (inactive) tài khoản Admin đang đăng nhập
+        // 2. Logic bảo vệ: Không cho phép vô hiệu hóa (inactive) tài khoản Admin
         if (currentAccount.role === 'admin' && accountData.status === 'inactive') {
             throw new Error("Bạn không thể vô hiệu hóa tài khoản Admin!");
         }
-        // 3. Kiểm tra trùng lặp username/email
-        // Lấy tất cả account về để check (trừ chính nó)
-        const allRes = await fetch(API_URL);
-        const allAccounts = await allRes.json();
+
+        // 3. Kiểm tra trùng lặp (trừ chính nó)
+        const allAccounts = await api.get('/accounts');
+
         const usernameExists = allAccounts.some(
             (acc) =>
                 acc.username.toLowerCase() === accountData.username.toLowerCase() &&
-                String(acc.id) !== String(id) // So sánh ID dạng chuỗi
+                String(acc.id) !== String(id)
         );
-        if (usernameExists) {
-            return Promise.reject(new Error("Username đã tồn tại"));
-        }
+        if (usernameExists) throw new Error("Username đã tồn tại");
 
         const emailExists = allAccounts.some(
             (acc) =>
                 acc.email.toLowerCase() === accountData.email.toLowerCase() &&
-                String(acc.id) !== String(id) // So sánh ID dạng chuỗi
+                String(acc.id) !== String(id)
         );
-        if (emailExists) {
-            return Promise.reject(new Error("Email đã tồn tại"));
-        }
+        if (emailExists) throw new Error("Email đã tồn tại");
 
         // 4. Xử lý Mật khẩu (Mã hóa nếu có thay đổi)
-        let passwordToSave = currentAccount.password; // Giữ mật khẩu cũ (đã hash)
+        let passwordToSave = currentAccount.password;
+
         if (accountData.password && accountData.password !== currentAccount.password) {
-            // Mã hoá mật khẩu mới
             passwordToSave = bcrypt.hashSync(accountData.password, SALT_ROUNDS);
         }
-        // 5. Cập nhật dữ liệu
+
+        // 5. Merge dữ liệu
         const updatedAccount = {
-            ...currentAccount, // Giữ lại thông tin cũ (id, createdAt...)
-            ...accountData,    // Ghi đè thông tin mới
+            ...currentAccount,
+            ...accountData,
             username: accountData.username.trim(),
             email: accountData.email.trim(),
-            password: passwordToSave, // Lưu mật khẩu đã xử lý
+            password: passwordToSave,
         };
 
-        // 6. Gửi lệnh PUT lên Server
-        const response = await fetch(`${API_URL}/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedAccount)
-        });
-
-        if (!response.ok) throw new Error('Failed to update account');
-        return await response.json();
+        // 6. Gọi PUT /accounts/:id
+        return await api.put(`/accounts/${id}`, updatedAccount);
     },
 
+    // Xóa tài khoản
     delete: async (idToDelete, currentUserId) => {
         // 1. Kiểm tra: Không được tự xóa chính mình
-        // (Chuyển sang String để so sánh an toàn vì ID json-server thường là string)
         if (String(idToDelete) === String(currentUserId)) {
             throw new Error("Bạn không thể xoá tài khoản đang đăng nhập!");
         }
 
-        // 2. Gửi lệnh DELETE lên Server
-        const response = await fetch(`${API_URL}/${idToDelete}`, {
-            method: 'DELETE'
-        });
-
-        if (!response.ok) {
-            // Nếu server trả về lỗi (ví dụ 404 Not Found)
-            throw new Error('Account not found or already deleted');
-        }
-
-        return await response.json();
+        // 2. Gọi DELETE /accounts/:id
+        return await api.delete(`/accounts/${idToDelete}`);
     },
 };
