@@ -18,18 +18,18 @@ function EditAccountForm({ account, onClose, onSave }) {
     useEffect(() => {
         if (account) {
             setForm({
-                username: account.username,
-                email: account.email,
-                password: account.password,
-                confirmPassword: account.password,
-                role: account.role,
-                status: account.status,
+                username: account.name || "",
+                email: account.email || "",
+                password: "",
+                confirmPassword: "",
+                role: account.role ? account.role.toLowerCase() : "user",
+                status: account.status ? account.status.toLowerCase() : "active",
             });
         }
     }, [account]);
 
     const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
+        const { name, value, checked } = e.target;
 
         if (name === "status") {
             setForm({ ...form, status: checked ? "active" : "inactive" });

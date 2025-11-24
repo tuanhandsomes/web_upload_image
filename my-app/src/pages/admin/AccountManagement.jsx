@@ -16,18 +16,26 @@ import { useAuth } from "../../contexts/AuthContext";
 
 import AccountForm from "../../components/common/AccountForm";
 import EditAccountForm from "../../components/common/EditAccountForm";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
 function AccountManagement() {
     const { user: currentUser } = useAuth(); // Lấy user đang đăng nhập
+    const [userList, setUserList] = useState([]); // Đây là danh sách gốc từ service
+    const [loading, setLoading] = useState(true); // Thêm state loading cho table
+
+    // States Filter & Search
     const [search, setSearch] = useLocalStorage("account_search", "");
     const [roleFilter, setRoleFilter] = useLocalStorage("account_role_filter", "All");
     const [statusFilter, setStatusFilter] = useLocalStorage("account_status_filter", "All");
-    const [showForm, setShowForm] = useState(false);
-    const [userList, setUserList] = useState([]); // Đây là danh sách gốc từ service
+    // Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const [editingAccount, setEditingAccount] = useState(null);
-    const [loading, setLoading] = useState(true); // Thêm state loading cho table
     const itemsPerPage = 5;
+    // Modal States (form)
+    const [showForm, setShowForm] = useState(false);
+    const [editingAccount, setEditingAccount] = useState(null);
+    // Modal States (delete)
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [accountToDelete, setAccountToDelete] = useState(null);
 
     const fetchAccounts = async () => {
         setLoading(true);
@@ -115,22 +123,24 @@ function AccountManagement() {
         }
     };
 
-    const handleDeleteAccount = async (account) => {
-        const accountToDelete = userList.find((a) => a.id === account.id);
+    const confirmDeleteAccount = (account) => {
+        setAccountToDelete(account);
+        setIsDeleteModalOpen(true);
+    };
 
-        const confirmed = window.confirm(
-            `Bạn có chắc muốn xoá tài khoản "${accountToDelete.username}" không?`
-        );
-        if (!confirmed) return;
+    const handleDeleteAccount = async () => {
+        if (!accountToDelete) return;
 
         try {
-            // Gọi service với ID cần xóa và ID của admin đang đăng nhập
             await accountService.delete(accountToDelete.id, currentUser.id);
-            toast.success("Xoá account thành công!");
-            fetchAccounts(); // Tải lại dữ liệu
+            toast.success("Xóa account thành công!");
+            await fetchAccounts();
         } catch (err) {
-            // Hiển thị lỗi từ service (ví dụ: "Bạn không thể tự xóa mình")
             toast.error(err.message);
+        } finally {
+            // Đóng modal và reset
+            setIsDeleteModalOpen(false);
+            setAccountToDelete(null);
         }
     };
 
@@ -253,19 +263,13 @@ function AccountManagement() {
                                     <td className="p-3 text-center flex justify-center gap-3">
                                         <button
                                             className="text-blue-600 hover:text-blue-800 transition-colors duration-200 cursor-pointer"
-                                            onClick={() => {
-                                                // Tìm account gốc (chưa chuẩn hóa) từ userList
-                                                const accToEdit = userList.find(
-                                                    (a) => a.id === user.id
-                                                );
-                                                setEditingAccount(accToEdit);
-                                            }}
+                                            onClick={() => setEditingAccount(user)}
                                         >
                                             <FontAwesomeIcon icon={faPenToSquare} />
                                         </button>
                                         <button
                                             className="text-red-600 hover:text-red-800 transition-colors duration-200 cursor-pointer"
-                                            onClick={() => handleDeleteAccount(user)}
+                                            onClick={() => confirmDeleteAccount(user)}
                                         >
                                             <FontAwesomeIcon icon={faTrash} />
                                         </button>
@@ -365,6 +369,18 @@ function AccountManagement() {
                     />
                 )
             }
+            {isDeleteModalOpen && (
+                <ConfirmModal
+                    isOpen={isDeleteModalOpen}
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onConfirm={handleDeleteAccount}
+                    title="Delete Account"
+                    // Lúc này accountToDelete chắc chắn đã có dữ liệu
+                    message={`Bạn có chắc chắn muốn xóa tài khoản "${accountToDelete?.name}"? Hành động này không thể hoàn tác.`}
+                    confirmText="Delete"
+                    confirmColor="bg-red-600"
+                />
+            )}
         </div >
     );
 }

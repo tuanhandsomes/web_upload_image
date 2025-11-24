@@ -18,6 +18,7 @@ import { useLocalStorage } from "../../hooks/useLocalStorage";
 
 import ProjectForm from "../../components/common/ProjectForm";
 import EditProjectForm from "../../components/common/EditProjectForm";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
 // Component nhỏ để render mỗi card dự án
 function ProjectCard({ project, onEdit, onDelete }) {
@@ -113,6 +114,8 @@ function ProjectManagement() {
     // States cho Modal
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingProject, setEditingProject] = useState(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState(null);
 
     // 1. Hàm tải danh sách project từ server
     const fetchProjects = async () => {
@@ -187,30 +190,31 @@ function ProjectManagement() {
         }
     };
 
-    const handleDeleteProject = async (project) => {
-        let confirmed = false;
-        if (project.photoCount > 0) {
-            confirmed = window.confirm(
-                `Project "${project.name}" đang có ${project.photoCount} ảnh. \n\nXoá project sẽ xoá tất cả ảnh liên quan. Bạn có chắc chắn muốn xoá không?`
-            );
-        }
-        else {
-            confirmed = window.confirm(
-                `Bạn có chắc chắn muốn xoá project "${project.name}" không?`
-            );
-        }
-        if (!confirmed) return;
+    // 3. SỬA HÀM: Chỉ mở modal, chưa xóa ngay
+    const confirmDeleteProject = (project) => {
+        setProjectToDelete(project); // Lưu project cần xóa
+        setIsDeleteModalOpen(true);  // Mở modal
+    };
+
+    // 4. HÀM MỚI: Xóa thật (Được gọi khi bấm nút "Delete" trên Modal)
+    const handleDeleteProject = async () => {
+        if (!projectToDelete) return;
 
         try {
-            if (project.photoCount > 0) {
-                await photoService.deletePhotosByProjectId(project.id);
+            // Logic xóa cũ chuyển vào đây
+            if (projectToDelete.photoCount > 0) {
+                await photoService.deletePhotosByProjectId(projectToDelete.id);
             }
-            await projectService.delete(project.id);
+            await projectService.delete(projectToDelete.id);
 
             toast.success("Xoá project thành công!");
-            await fetchProjects(); // Tải lại danh sách
+            await fetchProjects();
         } catch (err) {
             toast.error(err.message);
+        } finally {
+            // Đóng modal và reset
+            setIsDeleteModalOpen(false);
+            setProjectToDelete(null);
         }
     };
 
@@ -288,7 +292,7 @@ function ProjectManagement() {
                             key={project.id}
                             project={project}
                             onEdit={() => setEditingProject(project)}
-                            onDelete={() => handleDeleteProject(project)}
+                            onDelete={() => confirmDeleteProject(project)}
                         />
                     ))}
                 </div>
@@ -308,6 +312,15 @@ function ProjectManagement() {
                     s onSave={handleUpdateProject}
                 />
             )}
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)} // Đóng khi bấm X, Cancel, hoặc ra ngoài
+                onConfirm={handleDeleteProject} // Hàm xóa thật
+                title="Delete Project"
+                message={`Bạn có chắc chắn muốn xóa project "${projectToDelete?.name}"? Hành động này không thể hoàn tác và sẽ xóa tất cả ảnh bên trong.`}
+                confirmText="Yes, Delete it"
+                confirmColor="bg-red-600"
+            />
         </div>
     );
 }

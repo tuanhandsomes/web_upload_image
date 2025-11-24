@@ -15,6 +15,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { toast } from "react-toastify";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
 function ImageCard({ photo, onOpen, onDelete, canDelete }) {
 
@@ -147,6 +148,9 @@ function AllPhoto() {
 
     const [open, setOpen] = useState(false);
     const [index, setIndex] = useState(0);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [photoIdToDelete, setPhotoIdToDelete] = useState(null);
+
 
     // --- lấy tất cả dữ liệu ---
     useEffect(() => {
@@ -209,17 +213,23 @@ function AllPhoto() {
         setOpen(true);
     };
 
-    const handleDeletePhoto = async (photoId) => {
-        const confirmed = window.confirm("Bạn (Admin) có chắc muốn xóa ảnh này không?");
-        if (!confirmed) return;
+    const confirmDeletePhoto = (photoId) => {
+        setPhotoIdToDelete(photoId);
+        setIsDeleteModalOpen(true);
+    };
 
+    // 3. Hàm xóa thật
+    const handleDeletePhoto = async () => {
+        if (!photoIdToDelete) return;
         try {
-            await photoService.delete(photoId, currentUser.id, currentUser.role);
+            await photoService.delete(photoIdToDelete, currentUser.id, currentUser.role);
             toast.success("Đã xóa ảnh thành công!");
-            setAllPhotos(prevPhotos => prevPhotos.filter(p => p.id !== photoId));
-
+            setAllPhotos(prev => prev.filter(p => p.id !== photoIdToDelete));
         } catch (err) {
             toast.error(err.message || "Lỗi khi xóa ảnh.");
+        } finally {
+            setIsDeleteModalOpen(false);
+            setPhotoIdToDelete(null);
         }
     };
 
@@ -330,7 +340,7 @@ function AllPhoto() {
                                     key={photo.id}
                                     photo={photo}
                                     onOpen={() => openLightbox(idx)}
-                                    onDelete={() => handleDeletePhoto(photo.id)}
+                                    onDelete={() => confirmDeletePhoto(photo.id)}
                                     // Admin luôn có quyền xóa
                                     canDelete={true}
                                 />
@@ -346,6 +356,14 @@ function AllPhoto() {
                 close={() => setOpen(false)}
                 slides={slides}
                 index={index}
+            />
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeletePhoto}
+                title="Delete Photo"
+                message="Bạn (Admin) có chắc chắn muốn xóa ảnh này không?"
+                confirmText="Delete"
             />
         </div>
     );
